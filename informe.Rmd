@@ -1,36 +1,287 @@
 ---
-title: "titulo"
-author: "nombres"
+title: "Aplicacion de vacunas COVID19 en Argentina - NOMIVAC: 2020-2023"
+author: "Lautaro Felipe Skubaletzky"
 output: html_document
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # Cargar los paquetes necesarios acá
+library(rmarkdown)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
 ```
 
+# Introducción
 
-## Introducción
+:::{.alert .alert-info}
+Esta sección consiste en entre 2 y 3 párrafos describiendo los datos. Qué decir sobre los datos dependerá de los datos elegidos pero algunos detalles posibles son:
+:::
 
+## ¿Qué datos son?
 
+- Los datos contienen informacion de las aplicaciones de vacunas contra el COVID19.
 
-## Exploración de los datos
+- A nivel individual, cada fila corresponde a una nueva aplicacion de vacuna.
 
+- Para cada aplicacion disponemos de datos:
 
-```{r}
+  - Desnominalizados del **SUJETO QUIEN** es receptor. *(id_persona_dw)*.
+
+  - Categoricas como **DICOTOMICAS** del sexo y **RANGOS** por grupo etario. *(sexo y grupo_etario)*.
+
+  - ... un score de prioridad **ORDINAL** segun edad y factores de riesgo. *(condicion_aplicacion)*.
+
+  - Informacion temporal del **CUANDO** se aplica. **YYYY-MM-DD.** *(fecha_aplicacion)*.
+
+  - Informacion de departamento y jurisdiccion **DONDE** residence. **GEOREF.** *(jurisdiccion_residencia y depto_residencia)*.
+
+  - Informacion de departamente y jurisdiccion **DONDE** se aplica. **GEOREF.** *(jurisdiccion_aplica y depto_aplica)*
+
+  - ... **QUÉ** vacuna recibe. *(vacuna)*
+
+  - ... **QUÉ** lote descarga esa dosis. *(lote_vacuna)*
+  
+  - ... **CANTIDAD** de dosis recibidas. *(orden_dosis)*
+  
+  - ... **ESTADO DE AVANCE** con el esquema. *(nombre_dosis_generica)*
+
+  - ... adicionalmente a estos datos existen otras variables numericas que acompañan a las últimas manteniendo correspondencia entre **Códigos Ids** y **valores-definición.**
+  
+Para enternder un poco mas sobre los esquemas de vacunación y refuerzos para las diferentes poblaciones, visitar la pagina [sobre la vacunación contra el COVID19.](https://www.argentina.gob.ar/coronavirus/vacuna)
+
+Existe un dataset adicional en relacion a éste que registra los precios en dólares pagados por cada dosis por parte del Ministerio de Salud de la Nación. [**Link**](http://datos.salud.gob.ar/dataset/precio-unitario-de-vacunas-covid-19-adquiridas-por-el-ministerio-de-salud-de-la-nacion)
+  
+
+## ¿De dónde provienen? ¿Quién los tomó?
+
+Los datos fueron obtenidos del sitio de datos abiertos de la pagina de la nacion
+["datos abiertos argentina."](https://datos.gob.ar/dataset/salud-vacunas-contra-covid-19-dosis-aplicadas-republica-argentina---registro-desagregado){.alert-link}
+
+Los datos son propiedad del **Ministerio de Salud de la Nación, Dirección de Control de Enfermedades Inmunoprevenibles (DiCEI)** quien mantiene actualizado y online el dataset.
+
+Por otro lado, el registro está a cargo del **Programa Nacional de Control de Enfermedades Inmunoprevenibles (ProNaCEI)**, creado por [Resolución Ministerial 776/2010](https://bancos.salud.gob.ar/sites/default/files/2018-10/0000000494cnt-2013-10_resolucion-ministerial-259.pdf), cuyo propósito es disminuir la mortalidad a causa de dichas enfermedades, mediante la vacunación sostenida de los niños y adultos según vacuna y población objeto definida.
+
+## ¿En qué período se tomaron?
+
+Los datos corresponden al periodo que comprende la pandemia del COVID19. 
+
+El registro mas antiguo es del *29/12/2020* que podría corresponder a la aplicación de los primeros lotes de vacunas nacionalizadas o primeros vacunados registrados en el [NOMIVAC - Registro Federal de Vacunación Nominalizado](https://sisa.msal.gov.ar/sisadoc/docs/050203/nomivac_home.jsp). Sin perjuicio de ello, el registro se creó el *23/03/2021* dando apertura a su publicacion en "datos abiertos" a partir de esa fecha.
+
+Según la [pagina web](https://datos.gob.ar/dataset/salud-vacunas-contra-covid-19-dosis-aplicadas-republica-argentina---registro-desagregado/archivo/salud_e4515c25-e1fd-4f02-b1c1-5453c36eada6) en donde se encuentra disponible la base de datos, la frecuencia de actualizacion es a diario.
+
+El registro mas reciente del que se dispone es del *29/04/2023*, fecha en la que se realizó mi descarga y que luego se filtró la base en cantidad de observaciones para poder importarla de manera completa.
+
+# Exploración de los datos
+
+:::{.alert .alert-info}
+Esta sección es una primera exploracion de los datos. ¿Qué variables tiene? ¿Cuántas observaciones hay? ¿Cuántas variables?
+
+Seleccioná algunas variables resulten interesantes y mostrá sus propiedades.
+:::
+
+Los datos ingresados son tan solo una parte de la base, puesto que los ingredientes no entran todos juntos en la cocina...
+La base completa cuenta con 18 variables entre numeros enteros, fechas, palabras, codigos_id, etc. y unas 115 millones de filas. Intenté durante mucho, mucho^2, mucho^mucho, cargar esos datos a RStudio pero siempre fallo la carga vía read_csv, entonces en "/scripts/0_importa-datos.R", limite la cantidad de filas a leer, para poder avanzar con el TP1.
+
+```{r importaDatos, echo=FALSE, warning=FALSE}
 # Código para cargar o leer los datos
+# render("0_importa-datos.R")
+rm(list = ls())
+#source("scripts/0_descarga-datos.R")
+#source("scripts/0_unzip-datos.R")
+source("scripts/0_importa-datos.R", local = TRUE, echo = TRUE)
 ```
 
+Cödigo de R acá. Agregá más bloques según sea necesario
+1. vac_inicia "vacunados con esquema iniciado"
+1. vac_completa "vacunados con esquema completo"
+1. vac_adiciona "vacunados con dosis adicional"
+1. vac_refuerzo "vacunados con un refuerzo"
+1. vac_refuerzo2 "vacunados con dos refuerzos"
+1. vac_refuerzo3 "vacunados con tres refuerzos"
+1. group_by(sexo)
+1. group_by(grupo_etario)
+1. group_by(condicion_salud)
+1. group_by(sexo grupo_etario)
+1. group_by(sexo grupo_etario condicion_salud)
+1. ver la cantidad de dosis promedio por grupo etario
+
+## Exploracion de dominio (valores unicos en cada variable)
+
+A continuacion exploro cuales son los posibles valores que adoptan las variables, es decir su dominio, en terminos del "estado de la variable".
+
+```{r valoresDeVariables, echo=TRUE, results='hide', eval=FALSE}
+levels(factor(data$sexo))
+levels(factor(data$grupo_etario))
+#levels(factor(data$jurisdiccion_residencia))
+#levels(factor(data$depto_residencia))
+#levels(factor(data$jurisdiccion_aplicacion))
+#levels(factor(data$depto_aplicacion))
+#levels(factor(data$fecha_aplicacion))
+levels(factor(data$vacuna))
+levels(factor(data$nombre_dosis_generica))
+levels(factor(data$condicion_aplicacion))
+#levels(factor(data$lote_vacuna))
+levels(factor(data$orden_dosis))
+```
+
+## Correccion de datos (homogeneizacion)
+
+Se hallaron diferentes formas de ingresar datos sobre las edades y me parece mas organizado que un ordenamiento A-Z/0-9 es útil por lo que a continuacion modifico los datos según conveniencia.
+
+```{r}
+data <- data %>%
+  mutate(grupo_etario = case_when(
+    grupo_etario == "<12"   ~ "000-012",
+    grupo_etario == "12-17" ~ "012-017",
+    grupo_etario == "18-29" ~ "018-029",
+    grupo_etario == "30-39" ~ "030-039",
+    grupo_etario == "40-49" ~ "040-049",
+    grupo_etario == "50-59" ~ "050-059",
+    grupo_etario == "60-69" ~ "060-069",
+    grupo_etario == "70-79" ~ "070-079",
+    grupo_etario == "80-89" ~ "080-089",
+    grupo_etario == "90-99" ~ "090-099",
+    grupo_etario == ">=100" ~ "100-199",
+    TRUE ~ grupo_etario
+  ))
+{
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "<12", "000-012", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == ">=100", "100-199", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "12-17", "012-017", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "18-29", "018-029", grupo_etario))
+data <- data %>%   
+  mutate(grupo_etario = ifelse(grupo_etario == "30-39", "030-039", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "40-49", "040-049", grupo_etario))
+data <- data %>%
+  mutate(grupo_etario = ifelse(grupo_etario == "50-59", "050-059", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "60-69", "060-069", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "70-79", "070-079", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "80-89", "080-089", grupo_etario))
+data <- data %>% 
+  mutate(grupo_etario = ifelse(grupo_etario == "90-99", "090-099", grupo_etario))
+}
+```
+
+## Obtengo algunos df para explorar cantidades y participaciones 
+
+```{r}
+# cuantos por rango etario tomados por cantidad de dosis tuvieron 1 / 2 / 3... dosis.
+data %>% 
+  group_by(orden_dosis) %>% 
+  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
+  arrange(desc(orden_dosis))
+
+data %>% 
+  group_by(grupo_etario) %>% 
+  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
+  arrange(desc(grupo_etario))
+
+data %>% 
+  group_by(condicion_aplicacion) %>% 
+  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
+  arrange(desc(pob))
+```
+
+Se aprecia un error de analisis. Los datos no fueron filtrados por id_personadw por lo tanto existen multiples registros de aplicacion de vacunas para cada persona, en diferentes momentos (se cree).
+
+Para cada id_persona deberia analizarse en estas descriptivas solamente el ultimo registro alcanzado y aclarar bien definidamente que se considera un intervalo temporal de los registros totales que comienza en t(0) y termina en t(T).
+
+Adicionalmente se consideran incorrectos algunos valores del dominio de la variable condicion_aplicacion ya que repite informacion reservada para informarse a traves de la variable de grupo_etario. Esta situacion tambien genera una desagregacion importante en subgrupos de personas con y sin factores de riesgo, desagrupados por edad.
+
+## Se corregirán la variable condicion_aplicacion
+
+```{r}
+
+data <- data %>% 
+  mutate(condicion_aplicacion = ifelse(condicion_aplicacion=="60 o más años", "Adulto mayor", condicion_aplicacion))
+
+data <- data %>%
+  mutate(condicion_aplicacion = ifelse(str_detect(condicion_aplicacion, "años"), 
+                                      str_extract(condicion_aplicacion, "(?<=años\\s).*"),
+                                      condicion_aplicacion))
+
+data <- data %>%
+  mutate(condicion_aplicacion = case_when(
+    condicion_aplicacion == "Adulto mayor"           ~ "0 Adulto mayor",
+    condicion_aplicacion == "Estratégico"            ~ "1 Estratégico",
+    condicion_aplicacion == "Salud"                  ~ "2 Salud",
+    condicion_aplicacion == "CON Factores de Riesgo" ~ "3 CON Factores de Riesgo",
+    condicion_aplicacion == "Embarazo"               ~ "4 Embarazo",
+    condicion_aplicacion == "Viaje"                  ~ "5 Viaje",
+    condicion_aplicacion == "Otros"                  ~ "6 Otros",
+    condicion_aplicacion == "SIN Factores de Riesgo" ~ "7 SIN Factores de Riesgo",
+    TRUE ~ condicion_aplicacion
+  ))
+
+levels(factor(data$condicion_aplicacion))
+```
 
 
 ```{r}
-# Cödigo de R acá 
-# Agregá más bloques según sea necesario
+# minimo, promedio y maximo de dosis aplicadas a cada poblacion objetivo:
+data %>% 
+  group_by(grupo_etario) %>% 
+  summarise(min_dosis = min(orden_dosis), 
+            mean_dosis = mean(orden_dosis), 
+            max_dosis = max(orden_dosis)) %>% 
+arrange(desc(grupo_etario))
+
+data %>% 
+  group_by(condicion_aplicacion) %>% 
+  summarise(min_dosis = min(orden_dosis), 
+            mean_dosis = mean(orden_dosis), 
+            max_dosis = max(orden_dosis)) %>% 
+  arrange(desc(condicion_aplicacion))
+
 ```
+Se puede apreciar que casi todos los grupos etarios tienen un promedio de aplicaciones similar, y los valores extremos de minimos y maximos practicamente iguales.
 
 
+
+
+![Poblacion por edades vs dosis detras](https://www.teseopress.com/americalatinaenlatransiciondemografica/wp-content/uploads/sites/1127/2022/03/image36.png)
 
 ## Hipótesis
 
+:::{.alert .alert-info}
+Finalmente, esta sección contiene al menos 3 hipótesis o preguntas que puedan ser respondidas a partir de los datos. Éstas tienen que ser más o menos interesantes y no cosas que se hayan respondido con la exploración anterior.
 
+Traten de que sean hipótesis o preguntas que relacionen 2 o más variables. Por ejemplo, “¿Cuál es el mes con más turistas en una región?” no es una pregunta intersante, pero “Existe una relación entre la cantidad de visitas y la cantidad de hoteles en una región” es una hipótesis más jugosa que apunta a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
+:::
+
+Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, vulnerables y expuestos. Para maximizar el cuidado de la gente se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema.
+
+1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. (Se indagará sobre las etapas tempranas de vacunacion si las mismas fueron dirigidas a quien se esperaría como poblacion diana bajo la premisa anterior y en qué proporciones.)
+
+1. Como segundo criterio ordenador de la estrategia de vacunacion se priorizo las personas que habitan grandes ciudades por la poca distancia que se mantiene y en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales.
+
+1. Se cree que la poblacion diana obtuvo su segunda dosis en menor tiempo que las otras poblaciones. Ademas se intentara exhibir la frecuencia y distancia temporal que se observa entre una dosis y otra (descanso entre dosis que tiene en promedio cada poblacion objetivo mediante la fecha de aplicacion de cada registro para cada persona).
+
+1. Las personas que habitualmente residen grandes ciudades durante el ASPO podría haberse mudado a la periferia por las caracteristicas coyunturales de menor tasa de contagio u trabajo remoto y han sido vacunadas en departamentos que no corresponden a su residencia habitual. Se analiza los focos de aplicaciones para 3 intervalos temporales, inicial - nudo - final, para entreveer si existe movilizacion de habitantes entre las provinvias muy marcado por la ASPO.
+
+1. La distribucion geografica de vacunas se concentró sobre todo en poblaciones con alta densidad demografica y se retardo en alcanzar esas proporciones en las provincias del interior por disponer de mayor espacio para mantener la distancia social.
+
+1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunacion libre sin requisito de etapas. 
+
+```{r}
+ggplot2::ggplot(data, aes(x = data$grupo_etario, y = data$sexo)) + coord_flip()
+```
+
+
+:::{.alert .alert-info}
+
+:::
