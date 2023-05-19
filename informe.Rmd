@@ -12,6 +12,7 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(tidyr)
 ```
 
 # Introducción
@@ -83,9 +84,11 @@ Seleccioná algunas variables resulten interesantes y mostrá sus propiedades.
 :::
 
 Los datos ingresados son tan solo una parte de la base, puesto que los ingredientes no entran todos juntos en la cocina...
-La base completa cuenta con 18 variables entre numeros enteros, fechas, palabras, codigos_id, etc. y unas 115 millones de filas. Intenté durante mucho, mucho^2, mucho^mucho, cargar esos datos a RStudio pero siempre fallo la carga vía read_csv, entonces en "/scripts/0_importa-datos.R", limite la cantidad de filas a leer, para poder avanzar con el TP1.
+La base completa cuenta con 18 variables entre numeros enteros, fechas, palabras, codigos_id, etc. y unas 115 millones de filas. Intenté durante mucho, mucho^2, mucho^mucho, cargar esos datos a RStudio pero siempre fallo la carga vía read_csv, entonces en "/scripts/0_importa-datos.R", limite la cantidad de filas a leer, para poder avanzar con el TP1. 
 
-```{r importaDatos, echo=FALSE, warning=FALSE}
+En lo que va del comienzo del TP1, solo hice knit una vez con todos los datos y demora 1hr20min en cargar la informacion, medido por la ultima hora de modificacion del .Rmd y la hora en que se crea el ultimo .html.
+
+```{r importaDatos, echo=TRUE, warning=FALSE}
 # Código para cargar o leer los datos
 # render("0_importa-datos.R")
 rm(list = ls())
@@ -93,117 +96,62 @@ rm(list = ls())
 #source("scripts/0_unzip-datos.R")
 source("scripts/0_importa-datos.R", local = TRUE, echo = TRUE)
 ```
+Importar los datos me aclara que tengo columnas: chr(14), dbl(3) y una date(1)
 
-Cödigo de R acá. Agregá más bloques según sea necesario
-1. vac_inicia "vacunados con esquema iniciado"
-1. vac_completa "vacunados con esquema completo"
-1. vac_adiciona "vacunados con dosis adicional"
-1. vac_refuerzo "vacunados con un refuerzo"
-1. vac_refuerzo2 "vacunados con dos refuerzos"
-1. vac_refuerzo3 "vacunados con tres refuerzos"
-1. group_by(sexo)
-1. group_by(grupo_etario)
-1. group_by(condicion_salud)
-1. group_by(sexo grupo_etario)
-1. group_by(sexo grupo_etario condicion_salud)
-1. ver la cantidad de dosis promedio por grupo etario
 
 ## Exploracion de dominio (valores unicos en cada variable)
 
 A continuacion exploro cuales son los posibles valores que adoptan las variables, es decir su dominio, en terminos del "estado de la variable".
 
-```{r valoresDeVariables, echo=TRUE, results='hide', eval=FALSE}
+```{r valoresDeVariables, echo=FALSE, results='hide', eval=FALSE}
+summary(data)
+
 levels(factor(data$sexo))
+
 levels(factor(data$grupo_etario))
+
 #levels(factor(data$jurisdiccion_residencia))
+
 #levels(factor(data$depto_residencia))
+
 #levels(factor(data$jurisdiccion_aplicacion))
+
 #levels(factor(data$depto_aplicacion))
+
 #levels(factor(data$fecha_aplicacion))
+
 levels(factor(data$vacuna))
+
 levels(factor(data$nombre_dosis_generica))
+
 levels(factor(data$condicion_aplicacion))
+
 #levels(factor(data$lote_vacuna))
+
 levels(factor(data$orden_dosis))
 ```
+Con este codigo tengo una breve descripcion del tipo de datos disponibles en NOMIVAC. La gran mayoría son character, excepcion de fecha y orden dosis, asi como  variables id_codigos asociadas a otras descripcion_codigos.
 
-
-```{r}
-data <- data %>% 
-  rename(id_persona = id_persona_dw)
-```
 
 ## Correccion de datos (normalizacion y homogeneizacion)
 
+**id_persona_dw:** -> rename a id_persona.
 
-**grupo_etario (normalización):** Se hallaron diferentes formas de ingresar datos sobre las edades y resulta procedente tenerlos mejor organizados bajo un esquema alfabetico del tipo 0-9/A-Z. A continuacion se modifican datos de grupo_etario según conveniencia.
+**sexo (agrupacion):** sexo tiene dom{"F","M","S.I.","X"} donde X y S.I. (se asume sin especificar) resultan indistinto para analizar por ende restringimos el dominio => dom{"F","M","S.I."}. -> Se agrupo sexo = "X" con sexo = "S.I.".
 
-```{r edit_grupo_etario}
-data <- data %>%
-  mutate(grupo_etario = case_when(
-    grupo_etario == "<12"   ~ "000-012",
-    grupo_etario == "12-17" ~ "012-017",
-    grupo_etario == "18-29" ~ "018-029",
-    grupo_etario == "30-39" ~ "030-039",
-    grupo_etario == "40-49" ~ "040-049",
-    grupo_etario == "50-59" ~ "050-059",
-    grupo_etario == "60-69" ~ "060-069",
-    grupo_etario == "70-79" ~ "070-079",
-    grupo_etario == "80-89" ~ "080-089",
-    grupo_etario == "90-99" ~ "090-099",
-    grupo_etario == ">=100" ~ "100-199",
-    TRUE ~ grupo_etario
-  ))
+**grupo_etario (normalización):** Se hallaron diferentes formas de ingresar datos sobre las edades y resulta procedente tenerlos mejor organizados bajo un esquema alfabetico del tipo 0-9/A-Z. A continuacion se modifican datos de grupo_etario según conveniencia. -> Se han normalizado los strings para mejor ordenamiento del grupo_etario.
+
+**condicion_aplicacion (edición):** Se consideran incorrectos algunos valores del dominio de la variable condicion_aplicacion ya que repite informacion reservada para informarse a traves de la variable de grupo_etario. Esta situacion tambien genera una desagregacion importante en subgrupos de personas con y sin factores de riesgo, desagrupados por edad. Se remueve la informacion de grupo_etario de la variable condicion_aplicacion para que se agrupen un poco más en funcion del concepto. -> Se han editado las categorías para simplificar su analisis.
+
+```{r}
+source("scripts/1_normalizacion_valores.R", local = TRUE, echo = TRUE)
 ```
-Se han normalizado los strings para mejor ordenamiento del grupo_etario.
 
+## Comienzo a explorar el data frame.
 
-**condicion_aplicacion (edición):** Se consideran incorrectos algunos valores del dominio de la variable condicion_aplicacion ya que repite informacion reservada para informarse a traves de la variable de grupo_etario. Esta situacion tambien genera una desagregacion importante en subgrupos de personas con y sin factores de riesgo, desagrupados por edad. Se remueve la informacion de grupo_etario de la variable condicion_aplicacion para que se agrupen un poco más en funcion del concepto.
+Obtengo algunos df sobre las cantidades y participacion de valores de cada una de las variables de interes / de poblacion objetivo.
 
-```{r edit_condicion}
-levels(factor(data$condicion_aplicacion))
-
-data <- data %>% 
-  mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
-
-data <- data %>%
-  mutate(condicion_aplicacion = ifelse(str_detect(condicion_aplicacion, "años"), 
-                            str_extract(condicion_aplicacion, "(?<=años\\s).*"),
-                            condicion_aplicacion))
-
-data <- data %>%
-  mutate(condicion_aplicacion = case_when(
-    condicion_aplicacion == "Adulto mayor"           ~ "Adulto mayor",
-    condicion_aplicacion == "Estratégico"            ~ "Estratégico",
-    condicion_aplicacion == "Salud"                  ~ "Salud",
-    condicion_aplicacion == "CON Factores de Riesgo" ~ "Factores Riesgo ON",
-    condicion_aplicacion == "Embarazo"               ~ "Embarazo",
-    condicion_aplicacion == "Viaje"                  ~ "Viaje",
-    condicion_aplicacion == "Otros"                  ~ "Otros",
-    condicion_aplicacion == "SIN Factores de Riesgo" ~ "Factores Riesgo OFF",
-    TRUE ~ condicion_aplicacion
-  ))
-
-levels(factor(data$condicion_aplicacion))
-```
-Se han editado las categorías para simplificar su analisis.
-
-
-**sexo (agrupacion):** sexo tiene dom{"F","M","S.I.","X"} donde X y S.I. (se asume sin especificar) resultan indistinto para analizar por ende restringimos el dominio => dom{"F","M","S.I."}.
-
-```{r edit_sex}
-levels(factor(data$sexo))
-
-data <- data %>% 
-  mutate(sexo = ifelse(sexo=="X", "S.I.", sexo))
-
-levels(factor(data$sexo))
-```
-Se agrupo sexo = "X" con sexo = "S.I.".
-
-## Obtengo algunos df para explorar cantidades y participacion variables de interes y de poblacion objetivo.
-
-Cuantos por genero/edad/condicion tomados por cantidad de dosis tuvieron 1 / 2 / 3... dosis.
+Cuantas vacunaciones por sexo/edad/condicion.
 
 ```{r sex_obs_part}
 data %>% 
@@ -215,13 +163,14 @@ data %>%
 En la base hay mas mujeres que recibieron vacunas que hombres.
 
 ```{r edad_obs_part}
+diana = grupo_etario
 data %>% 
   group_by(grupo_etario) %>% 
   summarise(pob = length(grupo_etario)) %>% ## existe repeticion de personas.
   mutate(participacion_relativa = pob / sum(pob) * 100) %>%
-  arrange(desc(grupo_etario))
+  arrange(desc(pob))
 ```
-Se observa que quienes mas vacunaciones tienen son el grupo de 18 a 29 años. Esto puede deberse al recorte realizado, o bien que estas personas estan en trabajos estrategicos.
+Se observa que quienes mas vacunaciones tienen son el grupo de 000 a 000 años. Esto puede deberse al recorte realizado (mientras uno trabajo con un recorte de la base), o bien que estas personas estan en condiciones priorizadas de aplicacion durante las primeras rondas de vacunacion por ende comenzaron antes, se les exige que se vacunen durante la vacunacion sin requisitos por condicion, edad, etc. o tienen verdadero amor por la vacuna. Hay que recordar que la base es de registro de vacunaciones y la base completa es la foto real, mientras que este fue solo un recorte.
 
 ```{r condicion_obs_part}
 data %>% 
@@ -230,14 +179,16 @@ data %>%
   mutate(participacion_relativa = pob / sum(pob) * 100) %>%
   arrange(desc(pob))
 ```
-Se vacunaron mas personas **sin** factores de riesgo que **con** factores de riesgo, lo que en un primer momento puede parecer contraintuitivo. Se produce una confusion por la creencia en que personas con factores de riesgo serían mas prevalentes en la base, pero no es así, ya que no es la categoría de mas personas en la base. Por otro lado, lo que sí es correcto esperarse, es ver la poblacion con factores de riesgo, siendo vacunada con prioridad en las primeras rondas y con mayor cantidad de dosis que otras poblaciones.
+Se vacunaron mas personas **sin** factores de riesgo que **con** factores de riesgo, lo que en un primer momento puede parecer contraintuitivo. Se produce una confusion por la creencia en que personas con factores de riesgo serían mas prevalentes en el registro de vacunacion. No es así, ya que no es la categoría de mas pesa en la poblacion total, aunque debido a la condicion de riesgo es mas probable que tengan mas registros en promedio que otras categorias. Por otro lado, lo que sí es correcto esperarse, es ver la poblacion con factores de riesgo, siendo vacunada con prioridad en las primeras rondas y con mayor cantidad de dosis que otras poblaciones.
 
-**Devenido del analisis anterior:** se aprecia un error en la concepcion de estos datos. La base no fué filtrada por id_personadw por lo tanto existen multiples registros de aplicacion de vacunas para cada persona, en diferentes momentos (se cree). Si hubieramos importado la base completa quedaría en evidencia que existen varios registros (filas) por persona, una fila por cada aplicacion. Ya que importamos solo un recorte de los datos para no colapsar la memoria del ordenador no quedo tan en evidencia que la cantidad de registros (aprox.115millones) no cuadra ni de cerca con la cantidad de habitantes (aprox.45millones).
+**Devenido del analisis anterior:** se aprecia un error en la concepcion de estos datos. La base no fué filtrada por id_persona por lo tanto existen multiples registros de aplicacion de vacunas para cada persona (cosa que hasta el momento no quedaba clara), en diferentes momentos (se cree por fecha_apliacion y orden_dosis). Si hubieramos importado la base completa quedaría en evidencia que existen varios registros (filas) por persona, una fila por cada aplicacion. Ya que importamos solo un recorte de los datos para no colapsar la memoria del ordenador no quedo tan en evidencia que la cantidad de registros (aprox.115millones) no cuadra ni de cerca con la cantidad de habitantes (aprox.45millones).
 
-**Como utilizar la base de forma correcta:** para cada id_persona deberia analizarse en estas descriptivas solamente el ultimo registro alcanzado y aclarar bien definidamente que se considera un intervalo temporal de los registros totales que comienza en t(0) y termina en t(T). Es decir, es necesario filtrar filas para que solo me queden los datos de la ultima "foto" del estado de situacion hasta el momento t(T) de cada persona. "no se como operar eso".
+**Como utilizar la base de forma correcta:** para cada id_persona deberia analizarse en estas descriptivas solamente el ultimo registro alcanzado y aclarar bien definidamente que se considera un intervalo temporal de los registros totales que comienza en t(0) y termina en t(T). Es decir, es necesario filtrar filas para que solo me queden los datos de la ultima "foto" del estado de situacion hasta el momento t(T) de cada persona. "no se como operar eso... por ahora".
+
 
 ### Minimo, promedio y maximo de dosis aplicadas a cada poblacion objetivo:
 
+By_sexo
 ```{r sexo_min_mean_max}
 data %>% 
   group_by(sexo) %>% 
@@ -250,6 +201,7 @@ arrange(desc(sexo))
 ```
 Las mujeres en promedio se aplicaron mas vacunas que los hombres y adicionalmente forman un grupo mas numeroso. Mediante otros analisis puede comprobarse si estas medias realmente difieren estadisticamente [link.](https://openstax.org/books/introducci%C3%B3n-estad%C3%ADstica-empresarial/pages/10-1-comparacion-de-las-medias-de-dos-poblaciones-independientes)
 
+By_grupo_etario
 ```{r edad_min_mean_max}
 data %>% 
   group_by(grupo_etario) %>% 
@@ -262,7 +214,7 @@ arrange(desc(mean_dosis))
 ```
 Se puede apreciar que casi todos los grupos etarios tienen un promedio de aplicaciones similar, y los valores extremos de minimos y maximos practicamente iguales.
 
-
+By_condicion_aplicacion
 ```{r min_mean_max}
 data %>% 
   group_by(condicion_aplicacion) %>% 
@@ -273,10 +225,22 @@ data %>%
   mutate(n_relativo = n_grupo / sum(n_grupo) * 100 )  %>%
   arrange(desc(mean_dosis))
 ```
+Los adultos de 60 y mas años son quienes mas dosis se aplicaron en promedio.
+
+
+By_jurisdiccion_aplicacion
+```{r prov_obs_part}
+data %>% 
+  group_by(jurisdiccion_aplicacion) %>% 
+  summarise(pob = length(jurisdiccion_aplicacion)) %>% 
+  mutate(pob_rel = pob / sum(pob) * 100 ) %>% 
+  arrange(desc(pob))
+```
+Era de esperar Buenos Aires a la cabeza.
 
 
 ## Analisis para el grupo de factores de riesgo, como se compone en genero y edad.
-
+## Volver a ver.
 ```{r}
 data %>% 
   filter(condicion_aplicacion == "Factores Riesgo ON") %>% 
@@ -286,10 +250,12 @@ data %>%
   mutate() %>% 
   arrange(desc(pob))
 ```
+No me interesa seguir este linea por ahora.
 
 
 ## Creo nuevas variables que me sirvan para operar con la fecha
 
+Utilizando la variable fecha como filtro puedo recortar la base para que me traiga la ultima foto disponible para cada persona (justo aquello que no sabia hacer hasta ahora) y puedo analizar:
 ```{r noDupliReg_intento2}
 data %>%
   group_by(id_persona) %>% 
@@ -300,7 +266,7 @@ data %>%
   mutate(pob_rel = pob / sum(pob) * 100 ) %>% 
   arrange(dosis_media, pob)
 ```
-la suma de la poblacion me da 811.685 ahora si creo que me estan dando bien los resultados en vistas que tenia el objetivo de solamente analiza un registro por persona, y el registro mas actualizado por fecha. Estos 811 mil / 1000 mil registros importados es la proporcion de registros unicos mientras que 189 mil deben ser registros ya contenidos en la misma base y que son anteriores aplicaciones de vacuna.
+**Importar 1millon de datos:** la suma de la poblacion me da 811.685 ahora sí creo que me estan dando bien los resultados y son mas intuitivos sin confusion, en vistas que tenia el objetivo de solamente analiza un registro por persona, y el registro mas actualizado por fecha. Estos 811 mil / 1000 mil registros importados es la proporcion de registros unicos mientras que 189 mil deben ser registros ya contenidos en la misma base y que son anteriores aplicaciones de vacuna.
 
 Siguiendo con el analisis temporal de los datos quisiera saber que cantidad de dosis se aplicaron cada día.
 ```{r aplicaciones_diarias}
@@ -308,34 +274,53 @@ data %>%
   group_by(fecha_aplicacion) %>% 
   summarise(aplicacion_diaria = length(id_persona)) %>% 
   arrange(fecha_aplicacion)
-
-## este cuadro tiene potencial para verse bien en grafico.
 ```
+**Esta tabla me gustaría visualizarla en grafico, atractivo potencial** 
 
-Distribucion de vacunas por provincia de aplicacion
-```{r prov_obs_part}
-data %>% 
-  group_by(jurisdiccion_aplicacion) %>% 
-  summarise(pob = length(jurisdiccion_aplicacion)) %>% 
-  mutate(pob_rel = pob / sum(pob) * 100 ) %>% 
-  arrange(desc(pob))
-```
-Era de esperar Buenos Aires a la cabeza.
+LLegar a este resultado fue producto de mucha investigacion y formas diferentes de arreglar el comando. Una masa que por fin estoy obteniendo lo buscado. Cantidad de aplicaciones por día!.
+Trabajar con fechas resulta bastante interesante y tambien tengo mucho interes en el analisis espacial con geojson o shp. Casi toda la primer parte desvarie buscando packages y tratando de armar un mapa, pero no pude asique empece con las consignas del tp!
+
+:::{.alert .alert-info}
+Me gustaria saber si existe alguna tendencia en la cantidad de aplicaciones diarias dependiendo el dia de la semana que toca. Por ejemplo fin de semanas vs dias de semana. O bien, en grafico de barras de dom a lun. aplicaciones promedio u otro valor que no dependa de la magnitud por ejemplo día_i/sumatoria(aplicaciones de la semana) la cual te resulta una participacion de dom[0,1].
+1. Debería asociar la fecha con el día.
+1. Generar una sumatoria de aplicaciones de la semana y dividir ese día por la sumatoria de la semana. O bien, promedio historico por día.
+1. Hacer un grafico boxplot para evaluar visualmente las tendencias de min/media/max de aplicaciones para cada día, por ejemplo separando en 3 periodos el total, incio de la pandemia y escases de vacunas, ASPO fuerte con mas vacunacion y flexibilizacion de ASPO o actualidad. No se armar clusters pero podria ser por ahi armar los rangos de tiempo.
+:::
 
 ## Quisiera empezar con algunos graficos
 
+```{r}
+## deberia empezar con graficos de la ultima foto group_by(id_persona) %>% filter(fecha_aplicacion == max(fecha_aplicacion)) %>% group_by(sexo / edad / condicion / provincia) %>% summarise() %>% arrange()
+# 
+```
+
+
 por ejemplo: 
 ```{r}
+# Hago una columna de unos.
 data <- mutate(data, unos = 1)
 
+# Agrego columna de aplicaciones diaras (sumatoria por dia).
+data <- data %>% 
+  group_by(fecha_aplicacion) %>% 
+  mutate(aplicacion_diaria = length(unos))
+
+# Obtengo data frame con aplicaciones por fecha.
+data %>% 
+  group_by(fecha_aplicacion) %>% 
+  summarise(aplicacion_diaria = mean(aplicacion_diaria)) %>% 
+  arrange(desc(aplicacion_diaria))
+
+# 
 ggplot(data, mapping = aes(x = fecha_aplicacion, fill = vacuna)) +
-         geom_bar(stat = "sum", mapping = aes(y = unos))
+         geom_bar(stat = "count")
 ```
-[monitor de vacunas covid](https://www.argentina.gob.ar/coronavirus/vacuna/aplicadas)
-....
+
+[monitor de vacunas covid, para comparar resultados, prestar atencion a que si la base no se importa con todas sus filas los resultados seran totalmente diferentes.](https://www.argentina.gob.ar/coronavirus/vacuna/aplicadas)
 
 
-![Poblacion por edades vs dosis detras](https://www.teseopress.com/americalatinaenlatransiciondemografica/wp-content/uploads/sites/1127/2022/03/image36.png)
+
+![Poblacion por edades vs dosis detras - quiero un grafico como este con gris la poblacion total y delante en otro color la cantidad de personas con esquema completo, otro color mas adelante con esquema avanzado y otro con esquema solamente iniciado.](https://www.teseopress.com/americalatinaenlatransiciondemografica/wp-content/uploads/sites/1127/2022/03/image36.png)
 
 ## Hipótesis
 
@@ -345,25 +330,46 @@ Finalmente, esta sección contiene al menos 3 hipótesis o preguntas que puedan 
 Traten de que sean hipótesis o preguntas que relacionen 2 o más variables. Por ejemplo, “¿Cuál es el mes con más turistas en una región?” no es una pregunta intersante, pero “Existe una relación entre la cantidad de visitas y la cantidad de hoteles en una región” es una hipótesis más jugosa que apunta a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
 :::
 
-Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, vulnerables y expuestos. Para maximizar el cuidado de la gente se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema.
+Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la poblacion se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad.
 
-1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. (Se indagará sobre las etapas tempranas de vacunacion si las mismas fueron dirigidas a quien se esperaría como poblacion diana bajo la premisa anterior y en qué proporciones.)
+1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. -> Se indagará sobre las etapas tempranas de vacunacion si las mismas fueron dirigidas a quien se esperaría como poblacion diana bajo la premisa anterior, en qué proporciones y su evolucion.
 
 1. Como segundo criterio ordenador de la estrategia de vacunacion se priorizo las personas que habitan grandes ciudades por la poca distancia que se mantiene y en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales.
 
-1. Se cree que la poblacion diana obtuvo su segunda dosis en menor tiempo que las otras poblaciones. Ademas se intentara exhibir la frecuencia y distancia temporal que se observa entre una dosis y otra (descanso entre dosis que tiene en promedio cada poblacion objetivo mediante la fecha de aplicacion de cada registro para cada persona).
+1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones. Días de descanso entre dosis que tiene en promedio cada poblacion objetivo mediante la fecha de aplicacion de cada registro para cada persona. -> Para eso se calculará la cantidad de dias promedio que pasan entre una dosis y otra. dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99.
 
-1. Las personas que habitualmente residen grandes ciudades durante el ASPO podría haberse mudado a la periferia por las caracteristicas coyunturales de menor tasa de contagio u trabajo remoto y han sido vacunadas en departamentos que no corresponden a su residencia habitual. Se analiza los focos de aplicaciones para 3 intervalos temporales, inicial - nudo - final, para entreveer si existe movilizacion de habitantes entre las provinvias muy marcado por la ASPO.
+1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. -> Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
 
-1. La distribucion geografica de vacunas se concentró sobre todo en poblaciones con alta densidad demografica y se retardo en alcanzar esas proporciones en las provincias del interior por disponer de mayor espacio para mantener la distancia social.
+1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio un migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Mediante datos espaciales disponibles en INDEC y datos abiertos se puede medir aproximadamente el desplazamiento entre ambos puntos.
 
-1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunacion libre sin requisito de etapas. 
+1. La distribucion geografica de vacunas se concentró sobre todo en poblaciones con alta densidad demografica y se retardo en alcanzar esas proporciones en las provincias del interior por disponer de mayor espacio para mantener la distancia social o porque las poblaciones envejecidas, de salud y estrategicas se concentran en ciudades grandes que proveen servicios mas complejos.
 
+1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunacion libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion.
+
+## Otras exploraciones posibles
+
+:::{.alert .alert-info}
+1. vac_inicia "vacunados con esquema iniciado"
+1. vac_completa "vacunados con esquema completo"
+1. vac_adiciona "vacunados con dosis adicional"
+1. vac_refuerzo "vacunados con un refuerzo"
+1. vac_refuerzo2 "vacunados con dos refuerzos"
+1. vac_refuerzo3 "vacunados con tres refuerzos"
+1. group_by(sexo)
+1. group_by(grupo_etario)
+1. group_by(condicion_salud)
+1. group_by(vacuna)
+1. group_by(sexo, grupo_etario)
+1. group_by(sexo, grupo_etario, condicion_salud)
+1. ver la cantidad de dosis promedio por grupo etario
+1. group_by(jurisdiccion_aplicacion/residencia)
+1. group_by(fecha_aplicacion)
+1. confrontar jurisdiccion_residencia con jurisdiccion_apliacion y sumar los casos [nx3]. eje x residencia eje y aplicacion y ver si existe algun punto muy diferente. Puntos de mayor y menor tamaño (jitter).
+
+Buscar tambien informacion de poblacion por provincia, grupo_etario, sexo para 2023 y asi ver la tasa de cobertura de inmunizacion de personas con 1 o 2 o 3 o mas aplicaciones.
+:::
+
+## Seccion Graficos
 ```{r}
 ggplot2::ggplot(data, aes(x = data$grupo_etario, y = data$sexo)) + coord_flip()
 ```
-
-
-:::{.alert .alert-info}
-
-:::

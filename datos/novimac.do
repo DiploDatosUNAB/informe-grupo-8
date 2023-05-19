@@ -8,7 +8,7 @@ cd "C:\Users\lskuba\Desktop\Diplomatura Datos\Parte I - Programacion C23\clases\
 
 
 * importar solo id_persona_dw
-import delimited "datos_nomivac_covid19.csv", rowrange(1:200) colrange(1:) clear
+import delimited "datos_nomivac_covid19.csv", rowrange(1:) colrange(1:1) clear
 // ds, has(type string) 
 // local strvars "`r(varlist)'"
 // display `"`strvars'"' 

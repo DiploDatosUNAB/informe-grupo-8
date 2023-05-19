@@ -15,3 +15,7 @@ download.file(url = "https://sisa.msal.gov.ar/datos/descargas/covid-19/files/dat
               destfile = "datos/datos_nomivac_covid19.zip")
 
 options(timeout = min(120, getOption("timeout")))
+
+#download.file(url = "https://docs.google.com/spreadsheets/d/1QMjikfmQ4VW9hMmECushq1cd-Qx1OWRm/edit?usp=sharing&ouid=107840969554582034034&rtpof=true&sd=true", destfile = "datos/Dias-intFechasNOMIVAC.xlsx")
+# me gustaria saber como puedo subir un archivo a google drive y aqui pegar el link de descarga.
+# lo que pude pegar pero no sirve para descarga directa es el link de ingreso al archivo que no es lo mismo que su descarga.
