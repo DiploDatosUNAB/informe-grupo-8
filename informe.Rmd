@@ -127,11 +127,18 @@ levels(factor(data$condicion_aplicacion))
 levels(factor(data$orden_dosis))
 ```
 
-## Correccion de datos (homogeneizacion)
-
-Se hallaron diferentes formas de ingresar datos sobre las edades y me parece mas organizado que un ordenamiento A-Z/0-9 es útil por lo que a continuacion modifico los datos según conveniencia.
 
 ```{r}
+data <- data %>% 
+  rename(id_persona = id_persona_dw)
+```
+
+## Correccion de datos (normalizacion y homogeneizacion)
+
+
+**grupo_etario (normalización):** Se hallaron diferentes formas de ingresar datos sobre las edades y resulta procedente tenerlos mejor organizados bajo un esquema alfabetico del tipo 0-9/A-Z. A continuacion se modifican datos de grupo_etario según conveniencia.
+
+```{r edit_grupo_etario}
 data <- data %>%
   mutate(grupo_etario = case_when(
     grupo_etario == "<12"   ~ "000-012",
@@ -147,110 +154,185 @@ data <- data %>%
     grupo_etario == ">=100" ~ "100-199",
     TRUE ~ grupo_etario
   ))
-{
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "<12", "000-012", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == ">=100", "100-199", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "12-17", "012-017", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "18-29", "018-029", grupo_etario))
-data <- data %>%   
-  mutate(grupo_etario = ifelse(grupo_etario == "30-39", "030-039", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "40-49", "040-049", grupo_etario))
-data <- data %>%
-  mutate(grupo_etario = ifelse(grupo_etario == "50-59", "050-059", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "60-69", "060-069", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "70-79", "070-079", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "80-89", "080-089", grupo_etario))
-data <- data %>% 
-  mutate(grupo_etario = ifelse(grupo_etario == "90-99", "090-099", grupo_etario))
-}
 ```
+Se han normalizado los strings para mejor ordenamiento del grupo_etario.
 
-## Obtengo algunos df para explorar cantidades y participaciones 
 
-```{r}
-# cuantos por rango etario tomados por cantidad de dosis tuvieron 1 / 2 / 3... dosis.
-data %>% 
-  group_by(orden_dosis) %>% 
-  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
-  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
-  arrange(desc(orden_dosis))
+**condicion_aplicacion (edición):** Se consideran incorrectos algunos valores del dominio de la variable condicion_aplicacion ya que repite informacion reservada para informarse a traves de la variable de grupo_etario. Esta situacion tambien genera una desagregacion importante en subgrupos de personas con y sin factores de riesgo, desagrupados por edad. Se remueve la informacion de grupo_etario de la variable condicion_aplicacion para que se agrupen un poco más en funcion del concepto.
 
-data %>% 
-  group_by(grupo_etario) %>% 
-  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
-  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
-  arrange(desc(grupo_etario))
-
-data %>% 
-  group_by(condicion_aplicacion) %>% 
-  summarise(pob = length(id_persona_dw)) %>% ## existe repeticion de personas.
-  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
-  arrange(desc(pob))
-```
-
-Se aprecia un error de analisis. Los datos no fueron filtrados por id_personadw por lo tanto existen multiples registros de aplicacion de vacunas para cada persona, en diferentes momentos (se cree).
-
-Para cada id_persona deberia analizarse en estas descriptivas solamente el ultimo registro alcanzado y aclarar bien definidamente que se considera un intervalo temporal de los registros totales que comienza en t(0) y termina en t(T).
-
-Adicionalmente se consideran incorrectos algunos valores del dominio de la variable condicion_aplicacion ya que repite informacion reservada para informarse a traves de la variable de grupo_etario. Esta situacion tambien genera una desagregacion importante en subgrupos de personas con y sin factores de riesgo, desagrupados por edad.
-
-## Se corregirán la variable condicion_aplicacion
-
-```{r}
+```{r edit_condicion}
+levels(factor(data$condicion_aplicacion))
 
 data <- data %>% 
-  mutate(condicion_aplicacion = ifelse(condicion_aplicacion=="60 o más años", "Adulto mayor", condicion_aplicacion))
+  mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
 
 data <- data %>%
   mutate(condicion_aplicacion = ifelse(str_detect(condicion_aplicacion, "años"), 
-                                      str_extract(condicion_aplicacion, "(?<=años\\s).*"),
-                                      condicion_aplicacion))
+                            str_extract(condicion_aplicacion, "(?<=años\\s).*"),
+                            condicion_aplicacion))
 
 data <- data %>%
   mutate(condicion_aplicacion = case_when(
-    condicion_aplicacion == "Adulto mayor"           ~ "0 Adulto mayor",
-    condicion_aplicacion == "Estratégico"            ~ "1 Estratégico",
-    condicion_aplicacion == "Salud"                  ~ "2 Salud",
-    condicion_aplicacion == "CON Factores de Riesgo" ~ "3 CON Factores de Riesgo",
-    condicion_aplicacion == "Embarazo"               ~ "4 Embarazo",
-    condicion_aplicacion == "Viaje"                  ~ "5 Viaje",
-    condicion_aplicacion == "Otros"                  ~ "6 Otros",
-    condicion_aplicacion == "SIN Factores de Riesgo" ~ "7 SIN Factores de Riesgo",
+    condicion_aplicacion == "Adulto mayor"           ~ "Adulto mayor",
+    condicion_aplicacion == "Estratégico"            ~ "Estratégico",
+    condicion_aplicacion == "Salud"                  ~ "Salud",
+    condicion_aplicacion == "CON Factores de Riesgo" ~ "Factores Riesgo ON",
+    condicion_aplicacion == "Embarazo"               ~ "Embarazo",
+    condicion_aplicacion == "Viaje"                  ~ "Viaje",
+    condicion_aplicacion == "Otros"                  ~ "Otros",
+    condicion_aplicacion == "SIN Factores de Riesgo" ~ "Factores Riesgo OFF",
     TRUE ~ condicion_aplicacion
   ))
 
 levels(factor(data$condicion_aplicacion))
 ```
+Se han editado las categorías para simplificar su analisis.
 
 
-```{r}
-# minimo, promedio y maximo de dosis aplicadas a cada poblacion objetivo:
+**sexo (agrupacion):** sexo tiene dom{"F","M","S.I.","X"} donde X y S.I. (se asume sin especificar) resultan indistinto para analizar por ende restringimos el dominio => dom{"F","M","S.I."}.
+
+```{r edit_sex}
+levels(factor(data$sexo))
+
+data <- data %>% 
+  mutate(sexo = ifelse(sexo=="X", "S.I.", sexo))
+
+levels(factor(data$sexo))
+```
+Se agrupo sexo = "X" con sexo = "S.I.".
+
+## Obtengo algunos df para explorar cantidades y participacion variables de interes y de poblacion objetivo.
+
+Cuantos por genero/edad/condicion tomados por cantidad de dosis tuvieron 1 / 2 / 3... dosis.
+
+```{r sex_obs_part}
+data %>% 
+  group_by(sexo) %>% 
+  summarise(pob = length(sexo)) %>% 
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>% 
+  arrange(desc(sexo))
+```
+En la base hay mas mujeres que recibieron vacunas que hombres.
+
+```{r edad_obs_part}
+data %>% 
+  group_by(grupo_etario) %>% 
+  summarise(pob = length(grupo_etario)) %>% ## existe repeticion de personas.
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
+  arrange(desc(grupo_etario))
+```
+Se observa que quienes mas vacunaciones tienen son el grupo de 18 a 29 años. Esto puede deberse al recorte realizado, o bien que estas personas estan en trabajos estrategicos.
+
+```{r condicion_obs_part}
+data %>% 
+  group_by(condicion_aplicacion) %>% 
+  summarise(pob = length(id_persona)) %>% ## existe repeticion de personas.
+  mutate(participacion_relativa = pob / sum(pob) * 100) %>%
+  arrange(desc(pob))
+```
+Se vacunaron mas personas **sin** factores de riesgo que **con** factores de riesgo, lo que en un primer momento puede parecer contraintuitivo. Se produce una confusion por la creencia en que personas con factores de riesgo serían mas prevalentes en la base, pero no es así, ya que no es la categoría de mas personas en la base. Por otro lado, lo que sí es correcto esperarse, es ver la poblacion con factores de riesgo, siendo vacunada con prioridad en las primeras rondas y con mayor cantidad de dosis que otras poblaciones.
+
+**Devenido del analisis anterior:** se aprecia un error en la concepcion de estos datos. La base no fué filtrada por id_personadw por lo tanto existen multiples registros de aplicacion de vacunas para cada persona, en diferentes momentos (se cree). Si hubieramos importado la base completa quedaría en evidencia que existen varios registros (filas) por persona, una fila por cada aplicacion. Ya que importamos solo un recorte de los datos para no colapsar la memoria del ordenador no quedo tan en evidencia que la cantidad de registros (aprox.115millones) no cuadra ni de cerca con la cantidad de habitantes (aprox.45millones).
+
+**Como utilizar la base de forma correcta:** para cada id_persona deberia analizarse en estas descriptivas solamente el ultimo registro alcanzado y aclarar bien definidamente que se considera un intervalo temporal de los registros totales que comienza en t(0) y termina en t(T). Es decir, es necesario filtrar filas para que solo me queden los datos de la ultima "foto" del estado de situacion hasta el momento t(T) de cada persona. "no se como operar eso".
+
+### Minimo, promedio y maximo de dosis aplicadas a cada poblacion objetivo:
+
+```{r sexo_min_mean_max}
+data %>% 
+  group_by(sexo) %>% 
+  summarise(min_dosis = min(orden_dosis), 
+            mean_dosis = mean(orden_dosis), 
+            max_dosis = max(orden_dosis),
+            n_grupo = length(orden_dosis)) %>% 
+mutate(n_relativo = n_grupo / sum(n_grupo) * 100 )  %>%
+arrange(desc(sexo))
+```
+Las mujeres en promedio se aplicaron mas vacunas que los hombres y adicionalmente forman un grupo mas numeroso. Mediante otros analisis puede comprobarse si estas medias realmente difieren estadisticamente [link.](https://openstax.org/books/introducci%C3%B3n-estad%C3%ADstica-empresarial/pages/10-1-comparacion-de-las-medias-de-dos-poblaciones-independientes)
+
+```{r edad_min_mean_max}
 data %>% 
   group_by(grupo_etario) %>% 
   summarise(min_dosis = min(orden_dosis), 
             mean_dosis = mean(orden_dosis), 
-            max_dosis = max(orden_dosis)) %>% 
-arrange(desc(grupo_etario))
-
-data %>% 
-  group_by(condicion_aplicacion) %>% 
-  summarise(min_dosis = min(orden_dosis), 
-            mean_dosis = mean(orden_dosis), 
-            max_dosis = max(orden_dosis)) %>% 
-  arrange(desc(condicion_aplicacion))
-
+            max_dosis = max(orden_dosis),
+            n_grupo = length(grupo_etario)) %>%
+mutate(n_relativo = n_grupo / sum(n_grupo) * 100 )  %>%
+arrange(desc(mean_dosis))
 ```
 Se puede apreciar que casi todos los grupos etarios tienen un promedio de aplicaciones similar, y los valores extremos de minimos y maximos practicamente iguales.
 
 
+```{r min_mean_max}
+data %>% 
+  group_by(condicion_aplicacion) %>% 
+  summarise(min_dosis = min(orden_dosis), 
+            mean_dosis = mean(orden_dosis), 
+            max_dosis = max(orden_dosis),
+            n_grupo = length(condicion_aplicacion)) %>% 
+  mutate(n_relativo = n_grupo / sum(n_grupo) * 100 )  %>%
+  arrange(desc(mean_dosis))
+```
+
+
+## Analisis para el grupo de factores de riesgo, como se compone en genero y edad.
+
+```{r}
+data %>% 
+  filter(condicion_aplicacion == "Factores Riesgo ON") %>% 
+  group_by(grupo_etario) %>% 
+  summarise(orden_dosis_mean = mean(orden_dosis),
+            pob = length(orden_dosis)) %>% 
+  mutate() %>% 
+  arrange(desc(pob))
+```
+
+
+## Creo nuevas variables que me sirvan para operar con la fecha
+
+```{r noDupliReg_intento2}
+data %>%
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  group_by(condicion_aplicacion) %>% 
+  summarise(dosis_media = mean(orden_dosis),
+            pob = length(orden_dosis)) %>% 
+  mutate(pob_rel = pob / sum(pob) * 100 ) %>% 
+  arrange(dosis_media, pob)
+```
+la suma de la poblacion me da 811.685 ahora si creo que me estan dando bien los resultados en vistas que tenia el objetivo de solamente analiza un registro por persona, y el registro mas actualizado por fecha. Estos 811 mil / 1000 mil registros importados es la proporcion de registros unicos mientras que 189 mil deben ser registros ya contenidos en la misma base y que son anteriores aplicaciones de vacuna.
+
+Siguiendo con el analisis temporal de los datos quisiera saber que cantidad de dosis se aplicaron cada día.
+```{r aplicaciones_diarias}
+data %>% 
+  group_by(fecha_aplicacion) %>% 
+  summarise(aplicacion_diaria = length(id_persona)) %>% 
+  arrange(fecha_aplicacion)
+
+## este cuadro tiene potencial para verse bien en grafico.
+```
+
+Distribucion de vacunas por provincia de aplicacion
+```{r prov_obs_part}
+data %>% 
+  group_by(jurisdiccion_aplicacion) %>% 
+  summarise(pob = length(jurisdiccion_aplicacion)) %>% 
+  mutate(pob_rel = pob / sum(pob) * 100 ) %>% 
+  arrange(desc(pob))
+```
+Era de esperar Buenos Aires a la cabeza.
+
+## Quisiera empezar con algunos graficos
+
+por ejemplo: 
+```{r}
+data <- mutate(data, unos = 1)
+
+ggplot(data, mapping = aes(x = fecha_aplicacion, fill = vacuna)) +
+         geom_bar(stat = "sum", mapping = aes(y = unos))
+```
+[monitor de vacunas covid](https://www.argentina.gob.ar/coronavirus/vacuna/aplicadas)
+....
 
 
 ![Poblacion por edades vs dosis detras](https://www.teseopress.com/americalatinaenlatransiciondemografica/wp-content/uploads/sites/1127/2022/03/image36.png)
