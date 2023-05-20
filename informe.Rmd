@@ -92,8 +92,8 @@ En lo que va del comienzo del TP1, solo hice knit una vez con todos los datos y 
 # Código para cargar o leer los datos
 # render("0_importa-datos.R")
 rm(list = ls())
-#source("scripts/0_descarga-datos.R")
-#source("scripts/0_unzip-datos.R")
+source("scripts/0_descarga-datos.R")
+source("scripts/0_unzip-datos.R")
 source("scripts/0_importa-datos.R", local = TRUE, echo = TRUE)
 ```
 Importar los datos me aclara que tengo columnas: chr(14), dbl(3) y una date(1)
@@ -163,7 +163,6 @@ data %>%
 En la base hay mas mujeres que recibieron vacunas que hombres.
 
 ```{r edad_obs_part}
-diana = grupo_etario
 data %>% 
   group_by(grupo_etario) %>% 
   summarise(pob = length(grupo_etario)) %>% ## existe repeticion de personas.
@@ -278,7 +277,7 @@ data %>%
 **Esta tabla me gustaría visualizarla en grafico, atractivo potencial** 
 
 LLegar a este resultado fue producto de mucha investigacion y formas diferentes de arreglar el comando. Una masa que por fin estoy obteniendo lo buscado. Cantidad de aplicaciones por día!.
-Trabajar con fechas resulta bastante interesante y tambien tengo mucho interes en el analisis espacial con geojson o shp. Casi toda la primer parte desvarie buscando packages y tratando de armar un mapa, pero no pude asique empece con las consignas del tp!
+Trabajar con fechas resulta bastante interesante y tambien tengo **mucho interes en el analisis espacial con geojson o shp**. Casi toda la primer parte desvarie buscando packages y tratando de armar un mapa, pero no pude asique empece con las consignas del tp!
 
 :::{.alert .alert-info}
 Me gustaria saber si existe alguna tendencia en la cantidad de aplicaciones diarias dependiendo el dia de la semana que toca. Por ejemplo fin de semanas vs dias de semana. O bien, en grafico de barras de dom a lun. aplicaciones promedio u otro valor que no dependa de la magnitud por ejemplo día_i/sumatoria(aplicaciones de la semana) la cual te resulta una participacion de dom[0,1].
