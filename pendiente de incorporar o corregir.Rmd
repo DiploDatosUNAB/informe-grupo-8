@@ -1,0 +1,81 @@
+---
+title: "pendiente de incorporar o corregir"
+author: "LAUTA"
+date: "2023-05-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Seccion Graficos
+```{r plot_edad_sexo}
+ggplot2::ggplot(data, aes(x = data$grupo_etario, y = data$sexo)) + coord_flip()
+```
+
+![Poblacion por edades vs dosis detras - quiero un grafico como este con gris la poblacion total y delante en otro color la cantidad de personas con esquema completo, otro color mas adelante con esquema avanzado y otro con esquema solamente iniciado.](https://www.teseopress.com/americalatinaenlatransiciondemografica/wp-content/uploads/sites/1127/2022/03/image36.png)
+
+# NUBE DE PALABRAS PERO PARA VACUNAS
+```{r nube_palabras}
+#vacunas <- data$vacunas
+
+#vacunas <- data.frame(data$vacunas)
+
+#for (j in 1:100) {
+#    data[j, ] <- c("VACUNAS")
+#}
+
+#vacunas <- vacunas %>%
+#  select(vacunas.vacuna) %>%
+#  count(vacunas.vacuna, sort = TRUE) 
+
+#wordcloud2::wordcloud2(data, size = 1, minRotation = -pi/6, maxRotation = -pi/6,
+#                  color = "skyblue", backgroundColor = "white")
+```
+
+
+```{r}
+jurisdiccion_aplicacion_n <- data %>% 
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  group_by(jurisdiccion_aplicacion) %>% 
+  summarise(aplicados = n()) %>% 
+  arrange(desc(aplicados))
+
+jurisdiccion_residencia_n <- data %>% 
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  group_by(jurisdiccion_residencia) %>% 
+  summarise(residentes = n()) %>% 
+  arrange(desc(residentes))
+
+jurisdiccion_aplicacion_n <- jurisdiccion_aplicacion_n %>% 
+  rename(jurisdiccion = jurisdiccion_aplicacion)
+jurisdiccion_residencia_n <- jurisdiccion_residencia_n %>% 
+  rename(jurisdiccion = jurisdiccion_residencia)
+
+combinado <- merge(jurisdiccion_residencia_n, jurisdiccion_aplicacion_n, by = "jurisdiccion", all = TRUE)
+
+# Aca tengo cuantas personas estan registradas como residentes de cada jurisdiccion y separadamente cuantos fueron vacunados en esa jurisdiccion.
+print(combinado)
+print(jurisdiccion_aplicacion_n)
+print(jurisdiccion_residencia_n)
+
+# Me gustaria entregar un resultado mas especifico, sobre la cantidad de residentes de cada jurisdiccion, mas la cantidad de personas de esa jurisdiccion vacunadas alli mismo y cuantas personas de esa jurisdiccion fueron vacunadas en otra jurisdiccion.
+# Para esto necesito contar la cantidad de personas que registran su residencia en jur_i ese es mi N_i, luego filtrar las personas que jurisdiccion_aplicacion == jurisdiccion_residencia, y otra columna que tenga el conteo de cuantas peronas jurisdiccion_aplicacion != jurisdiccion_residencia
+
+ggplot(data[["jurisdiccion_aplicacion"]]) +
+  aes(x = reorder(jurisdiccion_aplicacion,N), y = N) +
+  geom_col(fill = "#228B22") +
+  labs(
+    title = "Victimas de la Represion Ilegal por Provincia de Nacimiento"
+  ) +
+  ylab(" ")+
+  xlab(" ")+
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 10L, hjust = 0.5))
+```
+

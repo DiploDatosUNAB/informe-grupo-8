@@ -1,12 +1,9 @@
-# ADECUACION DE VALORES DE VARIABLES
-# NORMALIZACION Y HOMOGENEIZACION
-
+# ADECUACION DE VALORES DE VARIABLES - NORMALIZACION Y HOMOGENEIZACION
 
 ## ID_PERSONA
 data <- data %>% 
   rename(id_persona = id_persona_dw)
 ## ID_PERSONA
-
 
 ## SEXO
 levels(factor(data$sexo))
@@ -16,7 +13,6 @@ data <- data %>%
 
 levels(factor(data$sexo))
 ## SEXO
-
 
 ## GRUPO_ETARIO
 data <- data %>%
@@ -35,7 +31,6 @@ data <- data %>%
     TRUE ~ grupo_etario
   ))
 ## GRUPO_ETARIO
-
 
 ## CONDICION_APLICACION
 
@@ -60,7 +55,3 @@ data <- data %>%
     TRUE ~ condicion_aplicacion
   ))
 ## CONDICION_APLICACION
-
-
-##
-

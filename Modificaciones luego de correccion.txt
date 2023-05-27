@@ -1,0 +1,32 @@
+Cada "name" es un tema a modificar pendiente.
+Cada "name_realizado" es un punto mejorado satisfactoriamente.
+Cada "name_consultar" es un tema atendido sin respuesta.
+
+"sampling"
+voy a estar averiguando estos dias de como hacer un sample para continuar el trabajo sobre ese recorte y no cualquier.
+
+cargar por unica vez la base completa
+escribir el chunk correspondiente a filtrar la ultima observacion de cada sujeto
+eso me resultaria en probablemente unos 45.000.000 de observaciones aprox los habitantes de argentina. Es un descuento de la base del 66%, es bastante pero no suficiente para procesar varias cosas.
+aplicar un metodo de sample para lograr, no se... 5 millones de datos aleatorios que sean representativos del diferentes grupos poblacionales.
+
+"crear un readme" de la descripcion de datos, chuncks e hipotesis al readme del repo.
+
+"moderate data"
+Un paquete que se más eficiente en cuanto a memoria es data.table. La sintaxis es muy distinta a dplyr, pero hay un paquete que extiende dplyr para usar la sintaxis de dplyr pero con el "backend" de data.table: dtplyr.
+Si los datos no entran en memoria, ya hay que ir a otras herramientas, como el paquete arrow, pero eso quizás es para la materia de big data.
+
+"realizado_descarga y unzip en readme"
+Estos scripts no tienen que correr cada vez que se knitea el archivo, así que lo mejor es dejarlos a parte y poner el en readme las instrucciones para obtener los datos y que quien quiera correr tu Rmd explícitamente corra estos scripts.
+
+"realizado_importar datos"
+pasar al core del .Rmd
+
+"realizado_probar el path sin doble <<- "
+
+"realizado_modificar nombres de script sin numeracion"
+
+***"modificar valores de variable mediante funcion *** esperar la clase de funciones"
+
+"realizado_terminar de modificar las salidas de html que reciben valores de {r varname}"
+
