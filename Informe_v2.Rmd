@@ -82,8 +82,8 @@ Quiero saber entre que fechas dispongo de informacion de registros de vacunació
 ```{r fechas_intervalo}
 fecha_0 <- summarise(data, min(fecha_aplicacion))
 fecha_T <- summarise(data, max(fecha_aplicacion))
+#La primer observacion se registró el **`r fecha_0`** y la última se registró el **`r fecha_T`**.
 ```
-La primer observacion se registró el **`r fecha_0`** y la última se registró el **`r fecha_T`**.
 
 #### Rango y magnitud de la base (cantidad de observaciones y variables)
 ```{r rango_datos}
@@ -91,19 +91,28 @@ obs_filas <- nrow(data) # cantidad de observaciones (filas)
 obs_cols <- ncol(data) # cantidad de variables (columnas)
 obs_valores = obs_filas * obs_cols # cantidad de datos (celdas)
 dim(data)
-names(data)
 ```
-Los datos se estructuran en **`r obs_filas`** observaciones (filas) y **`r obs_cols`** variables (columnas). Tenemos un total de **`r obs_valores`** valores o celdas con datos. `r dim(data)`.
+Los datos se estructuran en **`r obs_filas`** observaciones (filas) y **`r obs_cols`** variables (columnas). Tenemos un total de **`r obs_valores`** valores o celdas con datos.
+
+Cantidad de filas_observaciones (n): `r nrow(data)`
+Cantidad de columnas_variables (m): `r ncol(data)`
+Dimensiones, n | m: `r dim(data)`
+Cantidad de celdas_valores (nxm): `r nrow(data)*ncol(data)`
+
 @ver_que_sale_de_comentarios_con_func_R
 
 ### Descripción de variables de interés
+
+Presentacion de las variables:
+```{r}
+colnames(data)
+```
+Estas son todas las variables disponibles.
 
 #### Dominio de las variables (valores únicos)
 
 Se presentan a continuación los valores posibles que registran algunas de las variables, algo a lo que también haremos referencia como su dominio.
 ```{r summary_data_levels_factor, echo=TRUE, include=TRUE, eval=TRUE}
-colnames(data)
-#summary(data) # comento summary porque al no tratarse de una base muy numerica no me sirve de mucho este resumen.
 
 varlist <- c("sexo","grupo_etario","condicion_aplicacion","vacuna", "nombre_dosis_generica", "orden_dosis")
 for (vardin in varlist){
@@ -112,17 +121,17 @@ for (vardin in varlist){
   #distinct(data, var_output)
 }
 
-
+#summary(data) # comento summary porque al no tratarse de una base muy numerica no me sirve de mucho este resumen.
 ```
 Breve descripción del tipo de datos disponibles en NOMIVAC. La gran mayoría son character, excepcion de fecha y orden dosis, así como  variables id_codigos asociadas a otras descripcion_codigos.
 
 ```{r limpia_enviroment}
-rm(fecha_0, fecha_T, obs_cols, obs_filas, obs_valores, file_path, var_output, varlist, variables, vardin)
+rm(fecha_0, fecha_T, obs_cols, obs_filas, obs_valores, file_path, var_output, varlist, vardin)
 ```
 
 #### Adecuación de valores (edición, agrupación y homogeneización)
 
-```{r normalizacion_valores, echo=TRUE, eval=TRUE, include=FALSE}
+```{r normalizacion_valores, echo=TRUE, eval=TRUE, include=TRUE}
 source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = TRUE)
 ```
 
@@ -159,7 +168,7 @@ Obtengo algunos df sobre las cantidades y participación de la población objeti
 
 
 @Variables todas intento en loop
-```{r  tratando que funcione, eval=FALSE, include=FALSE}
+```{r desclist_estdisticas_loop, eval=TRUE, include=TRUE}
 desclist <- list()
 atexto <- list()
 
@@ -208,14 +217,13 @@ for (var in varlist) {
 
 rm(list = c("fecha_i", "mas_abs", "mas_rel", "var", "varlist", "desctabla"))
 
+desclist
 
 ```
-Esto probablemente seria mas facil con una funcion.
-
-
+Se realizó un loop para obtener estadisticas de cada agrupamiento segun la cantidad de dosis.
 
 ```{r atexto_ficticios}
-fecha_i <- "31/12/2022"
+fecha_i <- max(data$fecha_aplicacion) # "31/12/2022"
 mas_rel <- "MAS_RELATIVO"
 mas_abs <- "MAS_ABSOLUTO"
 vardin <- "AGRUPAMIENTO"
@@ -315,8 +323,9 @@ aplicaciones_diarias <- aplicaciones_diarias %>%
          anio_mes = format(fecha_aplicacion, "%Y-%m"),
          anio_semana = paste0(anio,"-",semana),
          anio_dia = paste0(anio,"-",dia))
+
+#Ya tengo una tabla de nombre `r aplicaciones_diarias` que me permite utilizar diferentes enfoques para analizar el fenomeno temporal de la vacunacion. Voy a realizar sumas para cada unidad de tiempo y almacenar los resultados en una lista.
 ```
-Ya tengo una tabla de nombre `r aplicaciones_diarias` que me permite utilizar diferentes enfoques para analizar el fenomeno temporal de la vacunacion. Voy a realizar sumas para cada unidad de tiempo y almacenar los resultados en una lista.
 
 ```{r ls_t_sumdosis_loop}
 # Armo una lista con agrupaciones por cantidad de aplicaciones por espacio temporal
@@ -347,7 +356,22 @@ Me gustaria saber si existe alguna tendencia en la cantidad de aplicaciones diar
 
 Gráfico de las aplicaciones diarias para todas las fechas disponibles y vacunas aplicadas segun color.
 ```{r lista_suma_dosis_tiempo}
+# Gráficos por cantidad de dosis aplicacion_diaria.
+
+## opcion: ver por vacuna aplicada
 ggplot(data, mapping = aes(x = fecha_aplicacion, fill = vacuna)) + geom_bar(stat = "count")
+## opcion: ver por condicion_aplicacion
+ggplot(data, mapping = aes(x = fecha_aplicacion, fill = condicion_aplicacion)) + geom_bar(stat = "count")
+## opcion: ver por anios
+ggplot(aplicaciones_diarias, mapping = aes(x = fecha_aplicacion, dosis)) + geom_point(aes(color = as.factor(anio)))
+
+## no funciona este apartado.
+anios <- c(2021, 2022, 2023)
+for (este_anio in anios) {
+aplicaciones_diarias %>% 
+  filter(anio == este_anio) %>% 
+  ggplot(aes(x = fecha_aplicacion, dosis)) + geom_col()
+}
 ```
 El gráfico permite rápidamente visualizar los períodos de mas alta vacunación. La misma es multicausal, entre las principales explicaciones son la disponibilidad de vacunas y ejecución del plan de inmunizaciones, la confianza de la población, la subida de los casos y colapso del sistema hospitalario.
 
@@ -380,8 +404,6 @@ En esta sección se presentan relaciones entre variables con el fin de explorar 
 
 ## Creo nuevas variables que me sirvan para operar con la fecha
 
-
-
 ```{r dosis_personas_sexos}
 
 # Obtener cantidad de personas por cantidad de dosis aplicadas y por sexo:
@@ -393,6 +415,12 @@ dosis_personas <- data %>%
   arrange(desc(orden_dosis))
 print(dosis_personas)
 
+dosis_personas %>% 
+  ggplot(aes(orden_dosis, pob, fill = sexo)) + 
+  geom_col() +
+  labs(title = paste0("Dosis_personas_por_sexo"))
+ggsave(paste0("png/dosis_personas_","sexo", ".png"))
+
 # Armar la tabla en formato wide
 dosis_personas_w <- dosis_personas %>% 
   pivot_wider(names_from = sexo, 
@@ -400,7 +428,7 @@ dosis_personas_w <- dosis_personas %>%
               values_fill = 0)
 print(dosis_personas_w)
 
-# Armar una tabla como antes, solo para H y con prop
+# Armar una tabla como antes, solo para M y con prop
 hombres_por_dosis <- data %>% 
   group_by(id_persona) %>% 
   filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
@@ -412,6 +440,7 @@ hombres_por_dosis <- data %>%
   arrange((orden_dosis))
 print(hombres_por_dosis)
 
+# Armar una tabla como antes, solo para F y con prop
 mujeres_por_dosis <- data %>% 
   group_by(id_persona) %>% 
   filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
@@ -420,20 +449,29 @@ mujeres_por_dosis <- data %>%
   summarise(F_pob = n()) %>%
   mutate(F_nrel = F_pob/sum(F_pob) * 100,
          Freq_rel_acum_F = (cumsum(F_pob) / sum(F_pob) * 100)) %>% 
-  arrange((orden_dosis))
+  arrange((orden_dosis)) 
 print(mujeres_por_dosis)
+
+mujeres_por_dosis %>% 
+  ggplot(aes(orden_dosis, Freq_rel_acum_F)) + geom_col()
 
 # Full outer join: combinacion externa es cuando algun codigo identificador no esta disponible en la otra base. 
 # En este caso debe agregarse el parametro all = TRUE para que aquellos sin coincidencia en el merge no se eliminen.
 sexojoin <- merge(hombres_por_dosis, mujeres_por_dosis, by = "orden_dosis", all = TRUE)
 sexojoin <- sexojoin %>% 
   arrange((orden_dosis))
-print(sexojoin)
 
 # Reemplazar los valores NA por ceros
-Ksexojoin <- sexojoin %>% mutate_all(~ifelse(is.na(.), 0, .))
-sexojoin
+#sexojoin <- sexojoin %>% mutate_all(~ifelse(is.na(.), 0, .))
 #sexojoin <- replace_na(sexojoin, replace = 0)
+
+print(dosis_personas)
+print(dosis_personas_w)
+print(hombres_por_dosis)
+print(mujeres_por_dosis)
+print(sexojoin)
+
+rm(hombres_por_dosis, mujeres_por_dosis)
 
 ```
 De la tabla se extrae que porcentaje de cada grupo se encuentra mas inmunizado para cada nivel de inmunizacion representada por cada una nueva dosis aplicada. x_i:"5" aplicaciones el grupo_sex1:"M" tiene un %_1:"0%" mientras que el grupo_sex2:"F" tiene un %_2:"3%". y Así... Las mujeres se aplican más que los varones.
@@ -467,78 +505,143 @@ Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemi
 1. vac_completa "vacunados con esquema completo"
 1. group_by(sexo, grupo_etario)
 1. group_by(sexo, grupo_etario, condicion_salud)
-1. confrontar jurisdiccion_residencia con jurisdiccion_apliacion y sumar los casos [nx3]. eje x residencia eje y aplicacion y ver si existe algun punto muy diferente. Puntos de mayor y menor tamaño (jitter).
 :::
+
+```{r jurisdicciones_cruce}
+
+#tabla cruce de migraciones residencia ~ lugar de aplicacion. A modo exploratorio.
+jurisdicciones_cruce <- table(data$jurisdiccion_residencia, data$jurisdiccion_aplicacion)
+jurisdicciones_cruce_id <- table(data$jurisdiccion_residencia_id, data$jurisdiccion_aplicacion_id)
+
+#jurisdicciones_cruce
+#jurisdicciones_cruce_id
+
+rm(jurisdicciones_cruce, jurisdicciones_cruce_id)
+```
+Se observa que la gran mayoría de personas se aplica la vacuna en su lugar de residencia, salvo pocas excepciones. Es dificil de visualizar cuantas personas se vacunan fuera de su jurisdiccion, por ello a continuacion se presenta un gráfico.
+
+```{r jurisdicciones_poblacion}
+
+# Armar una tabla con la caracterizacion de la poblacion del registro respecto la cantidad de personas segun al lugar de residencia y lugar de la ultima aplicacion.
+
+## Primero una tabla con la cantidad de residentes de cada jurisdiccion:
+pob_resid <- data %>% 
+  group_by(jurisdiccion_residencia) %>% 
+  summarise(n = n()) 
+## Segundo una tabla con la cantidad de aplicaciones de cada jurisdiccion:
+pob_aplic <- data %>% 
+  group_by(jurisdiccion_aplicacion) %>% 
+  summarise(n = n()) 
+## Tercero la union de ambas tablas con join_by ya que usan nombres diferentes de identificacion y sufijo porque ambos usan el mismo estadistico n.
+jurisdicciones_poblacion <- 
+  full_join(pob_resid, pob_aplic, join_by(jurisdiccion_residencia == jurisdiccion_aplicacion), suffix = c("_residencia", "_aplicacion")) 
+## Cuarto aplico la diferencia entre residentes y vacunados.
+jurisdicciones_poblacion <- jurisdicciones_poblacion %>% 
+  mutate(vac_extra = n_aplicacion - n_residencia) %>% 
+  arrange(jurisdiccion_residencia) %>% 
+  rename(jurisdiccion = jurisdiccion_residencia)
+
+rm(pob_resid, pob_aplic)
+
+```
+
+```{r jurisdicciones_poblacion_detail}
+# detalle extra:
+
+## cantidad de personas *residentes* de cada jurisdiccion que se aplican en *la misma* jurisdiccion.
+jresidentes <- data %>% 
+  filter(jurisdiccion_residencia == jurisdiccion_aplicacion) %>% 
+  group_by(jurisdiccion_residencia) %>% 
+  summarise(res_fix = n()) %>% 
+  arrange(jurisdiccion_residencia) %>% 
+  rename(jurisdiccion = jurisdiccion_residencia)
+
+## cantidad de personas *aplicadas* en cada jurisdiccion que residen en otra jurisdiccion.
+jnoresidentes <- data %>% 
+  filter(jurisdiccion_residencia != jurisdiccion_aplicacion) %>% 
+  group_by(jurisdiccion_aplicacion) %>% 
+  summarise(nores_fix = n()) %>% 
+  arrange(jurisdiccion_aplicacion) %>% 
+  rename(jurisdiccion = jurisdiccion_aplicacion)
+
+## cantidad de personas *residentes* de cada jurisdiccion que se aplican en *otra* jurisdiccion.
+jno_residentes <- data %>% 
+  filter(jurisdiccion_residencia != jurisdiccion_aplicacion) %>% 
+  group_by(jurisdiccion_residencia) %>% 
+  summarise(res_nofix = n()) %>% 
+  arrange(jurisdiccion_residencia) %>% 
+  rename(jurisdiccion = jurisdiccion_residencia)
+
+#vacunados por jurisdiccion:
+#jresidentes ## aplicados en la jurisdiccion de residencia, FIX = vacunados
+#jnoresidentes ## aplicados en esta jurisdiccion que no es la de su residencia, FIX = vacunados
+#jno_residentes ## aplicados en otra jurisdiccion que no es la de residencia, noFIX = no vacunados
+
+```
+
+
+```{r jurisdicciones_poblacion_join_extent}
+
+# extiendo el df para toda la informacion asociada a estas variables
+jurisdicciones_poblacion <- full_join(jurisdicciones_poblacion, jresidentes, by = "jurisdiccion")
+jurisdicciones_poblacion <- full_join(jurisdicciones_poblacion, jnoresidentes, by = "jurisdiccion")
+jurisdicciones_poblacion <- full_join(jurisdicciones_poblacion, jno_residentes, by = "jurisdiccion")
+
+# libero espacio
+rm(jresidentes, jnoresidentes, jno_residentes)
+
+# reordeno, mejor lectura
+col_order <- c("jurisdiccion", "n_residencia", "res_fix", "res_nofix", "n_aplicacion", "nores_fix", "vac_extra") 
+jurisdicciones_poblacion <- jurisdicciones_poblacion %>% 
+  select(col_order)
+# alternativa de reorden
+#jurisdicciones_poblacion <- jurisdicciones_poblacion[, col_order]
+
+```
+
 
 ```{r}
 
-#tabla cruce de migraciones residencia ~ lugar de aplicacion.
-tabla_cruce <- table(data$jurisdiccion_aplicacion, data$jurisdiccion_residencia)
-
-data %>% 
-  group_by(jurisdiccion_residencia, jurisdiccion_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  mutate(prop = n/sum(n) * 100) %>% 
-  arrange(desc(prop))
-
-residentes <- data %>% 
-  filter(jurisdiccion_residencia == jurisdiccion_aplicacion) %>% 
-  group_by(jurisdiccion_residencia) %>% 
-  summarise(vac_en_esta_jur = n()) %>% 
-  arrange(jurisdiccion_residencia)
-
-no_residentes <- data %>% 
-  filter(jurisdiccion_residencia != jurisdiccion_aplicacion) %>% 
-  group_by(jurisdiccion_residencia) %>% 
-  summarise(vac_en_otra_jur = n()) %>% 
-  arrange(jurisdiccion_residencia)
-
-jurisdicciones <- full_join(residentes, no_residentes, by = "jurisdiccion_residencia")
-
-ggplot(jurisdicciones, aes(vac_en_otra_jur, jurisdiccion_residencia)) + geom_col()
+# aplicaciones segun residencia de cada jurisdiccion.
+ggplot(jurisdicciones_poblacion, aes(n_aplicacion, jurisdiccion)) + 
+  geom_col(aes(res_fix, jurisdiccion, color = "blue")) + 
+  geom_col(aes(nores_fix, jurisdiccion, color = "green"))
   
+data %>% 
+  group_by(jurisdiccion_aplicacion, jurisdiccion_residencia) %>% 
+  summarise(n = n()) %>% 
+  arrange(desc(n)) %>% 
+  ggplot(aes(n, jurisdiccion_aplicacion, fill = jurisdiccion_residencia)) + geom_col()
+
+ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion1" ,".png"))
+
+
 ```
 se puede observar que residentes de la provincia de Buenos Aires se aplicaron en otras jurisdcciones mas que otros ciudadanos.
 
 Parece interesante, contrastar esta fuga de bonaerenses contra, cuantas otras personas se fugan de su jurisdiccion y donde tuvieron acogida.
-
-```{r}
-
-table(data$sexo, data$grupo_etario)
-
+```{r jurisdiccion_distribucion_residentes, message=FALSE}
+data %>% 
+  group_by(jurisdiccion_residencia, jurisdiccion_aplicacion) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n/sum(n) * 100) %>% 
+  arrange(jurisdiccion_residencia) %>% 
+  ggplot(aes(jurisdiccion_residencia, jurisdiccion_aplicacion, size = n)) + 
+  geom_point(aes(color = jurisdiccion_residencia))
+# Guardo
+ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion2" ,".png"))
 ```
 
 
-```{r}
-# Ejemplo de cruce de dos variables en R
-# Supongamos que tienes dos variables: x y y
+```{r grupo_etario_jovenes}
+jovenes <- data %>%
+  mutate(grupo_etario_proxy = substr(grupo_etario, nchar(grupo_etario) - 2, nchar(grupo_etario)), 
+         jovenes = ifelse(grupo_etario_proxy < 30, "joven", "adulto")) %>% 
+  select(grupo_etario, grupo_etario_proxy, jovenes)
 
-# Genera datos de ejemplo
-x <- c("A", "B", "A", "A", "B")
-y <- c("X", "Y", "X", "Y", "X")
+#table(data$sexo, data$grupo_etario)
 
-# Calcula el cruce de las variables x y y
-tabla_cruce <- table(x, y)
-# Muestra la tabla de cruce
-print(tabla_cruce)
-
-# Calcula la tabla de contingencia
-tabla_contingencia <- xtabs(~ x + y)
-# Muestra la tabla de contingencia
-print(tabla_contingencia)
-
-# Combina las variables en un data frame
-datos <- data.frame(x, y)
-datos
-# Calcula la tabla de contingencia utilizando aggregate()
-#tabla_contingencia <- aggregate(. ~ ., data = datos, FUN = length)
-# Muestra la tabla de contingencia
-print(tabla_contingencia)
-
-# Calcula la tabla de contingencia utilizando dplyr
-tabla_contingencia <- datos %>%
-  count(x, y)
-# Muestra la tabla de contingencia
-print(tabla_contingencia)
+#condicion_sexo <- table(data$condicion_aplicacion, data$grupo_etario)
+#condicion_sexo <- round(prop.table(condicion_sexo) * 100, 2)
 
 ```

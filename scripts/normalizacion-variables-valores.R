@@ -1,4 +1,9 @@
 # ADECUACION DE VALORES DE VARIABLES - NORMALIZACION Y HOMOGENEIZACION
+## Breve adecuacion de nombres de variables, 
+## agrupaciones de levels(factor) y 
+## armonizacion de grupos por grupo_etario y condicion_aplicacion.
+
+max(data$fecha_aplicacion)
 
 ## ID_PERSONA
 data <- data %>% 
