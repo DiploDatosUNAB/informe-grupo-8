@@ -38,8 +38,8 @@ data <- data %>%
   mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
 
 data <- data %>%
-  mutate(condicion_aplicacion = ifelse(str_detect(condicion_aplicacion, "años"), 
-                                       str_extract(condicion_aplicacion, "(?<=años\\s).*"),
+  mutate(condicion_aplicacion = ifelse(stringr::str_detect(condicion_aplicacion, "años"), 
+                                       stringr::str_extract(condicion_aplicacion, "(?<=años\\s).*"),
                                        condicion_aplicacion))
 
 data <- data %>%

@@ -56,23 +56,13 @@ for (var in varlist) {
 fecha_i <- summarise(data, max(fecha_aplicacion))
 
 ## mas_abs: el grupo que en valor absoluto recibió más vacunas
-mas_abs <- data %>% 
-  group_by(id_persona) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
-  group_by(.data[[var]]) %>% 
-  summarise(poblacion = sum(orden_dosis))
-mas_abs <- mas_abs %>% 
-  filter(poblacion == max(poblacion)) %>% 
+mas_abs <- desctabla %>% 
+  filter(total_dosis == max(total_dosis)) %>% 
   select(.data[[var]])
 
 ## mas_rel: el grupo que en promedio recibió más vacunas
-mas_rel <- data %>% 
-  group_by(id_persona) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
-  group_by(.data[[var]]) %>% 
-  summarise(poblacion = mean(orden_dosis))
-mas_rel <- mas_rel %>% 
-  filter(poblacion == max(poblacion)) %>% 
+mas_rel <- desctabla %>% 
+  filter(mean_dosis == max(mean_dosis)) %>% 
   select(.data[[var]])
 
 atexto[[var]] <- c(fecha_i, mas_abs, mas_rel)
@@ -95,20 +85,21 @@ ahora la version completa del iterable:
 
 # hacer una ´rueba de fecha de corte:
 ```{r}
-vardin = "sexo"
-varstat = "orden_dosis"
+fecha_corte <- "2022-01-01"
+vardin <- data$sexo
+varstat <- data$orden_dosis
 desctabla <- data %>%
   group_by(id_persona) %>%
   filter(fecha_aplicacion <= fecha_corte) %>% 
   filter(fecha_aplicacion == max(fecha_aplicacion)) %>%
-  group_by(vardin) %>%
+  group_by(sexo) %>%
   summarise(min_dosis = min(varstat),
             mean_dosis = mean(varstat),
             max_dosis = max(varstat),
             poblacion = length(varstat),
             n_dosis = mean_dosis * poblacion) %>%
   mutate(participacion = poblacion / sum(poblacion) * 100) %>% 
-  arrange(vardin)
+  arrange(sexo)
 
 print(desctabla)
 
