@@ -359,7 +359,7 @@ ls_genvar_estdesc$sexo
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, total_dosis)) +
   geom_col()
-ggsave(paste0("png/sexo_grafico_estandar","total_dosis", ".png"))
+ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
 ```
 
 ### Variable `grupo_etario`
@@ -372,7 +372,7 @@ ls_genvar_estdesc$grupo_etario
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, total_dosis)) +
   geom_col()
-ggsave(paste0("png/grupo_etario_grafico_estandar","total_dosis", ".png"))
+ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
 ```
 
 ### Variable `condicion_aplicacion`
@@ -385,7 +385,7 @@ ls_genvar_estdesc$condicion_aplicacion
 ls_genvar_estdesc$condicion_aplicacion %>% 
   ggplot(mapping = aes(condicion_aplicacion, participacion)) +
   geom_col()
-ggsave(paste0("png/condicion_aplicacion_grafico_estandar","total_dosis", ".png"))
+ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
 ```
 
 ### Variable `jurisdiccion_aplicacion`
@@ -398,7 +398,7 @@ ls_genvar_estdesc$jurisdiccion_aplicacion
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
   ggplot(mapping = aes(participacion, jurisdiccion_aplicacion)) +
   geom_col()
-ggsave(paste0("png/jurisdiccion_aplicacion_grafico_estandar","total_dosis", ".png"))
+ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
 ```
 
 ### Variables `max(fecha_aplicacion)` y `orden_dosis`
