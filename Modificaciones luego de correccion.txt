@@ -2,15 +2,15 @@ Cada "name" es un tema a modificar pendiente.
 Cada "name_realizado" es un punto mejorado satisfactoriamente.
 Cada "name_consultar" es un tema atendido sin respuesta.
 
-"sampling"
+"realizado_sampling_realizado"
 voy a estar averiguando estos dias de como hacer un sample para continuar el trabajo sobre ese recorte y no cualquier.
-
 cargar por unica vez la base completa
 escribir el chunk correspondiente a filtrar la ultima observacion de cada sujeto
 eso me resultaria en probablemente unos 45.000.000 de observaciones aprox los habitantes de argentina. Es un descuento de la base del 66%, es bastante pero no suficiente para procesar varias cosas.
 aplicar un metodo de sample para lograr, no se... 5 millones de datos aleatorios que sean representativos del diferentes grupos poblacionales.
+_realizado
 
-"crear un readme" de la descripcion de datos, chuncks e hipotesis al readme del repo.
+"realizado_crear un readme_realizado" de la descripcion de datos, chuncks e hipotesis al readme del repo.
 
 "moderate data"
 Un paquete que se más eficiente en cuanto a memoria es data.table. La sintaxis es muy distinta a dplyr, pero hay un paquete que extiende dplyr para usar la sintaxis de dplyr pero con el "backend" de data.table: dtplyr.
