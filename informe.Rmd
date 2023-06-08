@@ -34,6 +34,9 @@ library(lubridate)
 
 ```
 
+# NOTAS
+1. Mas colores http://sape.inf.usi.ch/quick-reference/ggplot2/colour
+
 # Introducción al uso de datos de la base NOMIVAC.
 
 ## Importar datos -> Muestra
@@ -389,14 +392,14 @@ ls_genvar_estdesc$sexo %>%
 
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, total_dosis)) +
-  geom_col() +
+  geom_col(fill="chocolate") +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
 
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, mean_dosis)) +
-  geom_col() +
+  geom_col(fill="steelblue") +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","sexo", "_","mean_dosis", ".png"))
@@ -429,14 +432,14 @@ ls_genvar_estdesc$grupo_etario %>%
 
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, total_dosis)) +
-  geom_col() +
+  geom_col(fill="chocolate") +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
 
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, mean_dosis)) +
-  geom_col() +
+  geom_col(fill="steelblue") +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","mean_dosis", ".png"))
@@ -469,14 +472,14 @@ ls_genvar_estdesc$condicion_aplicacion %>%
 
 ls_genvar_estdesc$condicion_aplicacion %>% 
   ggplot(mapping = aes(condicion_aplicacion, total_dosis)) +
-  geom_col() +
+  geom_col(fill="chocolate") +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
 
 ls_genvar_estdesc$condicion_aplicacion %>% 
   ggplot(mapping = aes(condicion_aplicacion, mean_dosis)) +
-  geom_col() +
+  geom_col(fill="steelblue") +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
@@ -509,14 +512,14 @@ ls_genvar_estdesc$jurisdiccion_aplicacion %>%
 
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
   ggplot(mapping = aes(jurisdiccion_aplicacion, total_dosis)) +
-  geom_col() +
+  geom_col(fill="chocolate") +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
 
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
   ggplot(mapping = aes(jurisdiccion_aplicacion, mean_dosis)) +
-  geom_col() +
+  geom_col(fill="steelblue") +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","mean_dosis", ".png"))
@@ -549,14 +552,14 @@ ls_genvar_estdesc$vacuna %>%
 
 ls_genvar_estdesc$vacuna %>% 
   ggplot(mapping = aes(vacuna, total_dosis)) +
-  geom_col() +
+  geom_col(fill="chocolate") +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
 
 ls_genvar_estdesc$vacuna %>% 
   ggplot(mapping = aes(vacuna, mean_dosis)) +
-  geom_col() +
+  geom_col(fill="steelblue") +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","vacuna", "_","mean_dosis", ".png"))
@@ -603,6 +606,102 @@ ls_genvar_texto[["orden_dosis"]][1,1]
 ls_genvar_texto[["orden_dosis"]]
 rm(mas_abs, mas_rel)
 ```
+# Caracterizacion de la poblacion
+piramide problacional
+
+```{r piramide_poblacional}
+
+# piramide poblacional por sexo y grupo_etario
+datos_piramide <- data_per %>% 
+  group_by(sexo, grupo_etario) %>% 
+  summarise(n = n()) %>% 
+  subset(sexo != "S.I.")
+  
+# invierto el signo de poblacion para los masculinos
+datos_piramide$n <- ifelse(datos_piramide$sexo == "M", -datos_piramide$n, datos_piramide$n)
+
+# grafico piramide
+datos_piramide %>% 
+  ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
+  geom_col() +
+  labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>")
+
+# mejorar el resultado
+n_range <- range(datos_piramide$n)
+
+# valores de x sin negativos
+intervalo <- round(max(abs(n_range[1]), abs(n_range[2])) / 10, 0)
+n_range_seq <- seq(n_range[1], n_range[2], by = intervalo)
+
+# pretty nos ayuda a armar valores de referencia redondeados
+pop_range_breaks <- pretty(n_range, n = 7)
+
+datos_piramide %>% 
+  ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
+  geom_col() +
+  scale_x_continuous(breaks = pop_range_breaks,
+                     labels = scales::comma(abs(pop_range_breaks))) + ## ver que le vuelvo a meter ABS. 
+  labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>") +
+  xlab(label = "Población") +
+  ylab(label = "Grupo etario") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/piramide_poblacional_","sexo_grupo_etario", ".png"))
+
+# ?text ## para agregar valores, no me funciono
+
+```
+Gracias Elio por el material: 
+Me hubiera gustado y queda pendiente terminar la biblio generando una funcion como explica en el paso a paso.
+https://www.njtierney.com/post/2022/08/09/ggplot-pyramid/
+
+
+
+```{r}
+two_abs_age_lga <- function(lga_1, lga_2){
+  bind_rows(
+    abs_age_lga(lga_1),
+    abs_age_lga(lga_2)
+  )
+}
+
+# masculino <- two_abs_age_lga("M")
+# femenino <- two_abs_age_lga("F")
+
+data_masc <- data_per %>% 
+  filter(sexo == "M") %>% 
+  group_by(sexo, grupo_etario) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
+  geom_col(fill="chocolate")
+
+data_fem <-  data_per %>% 
+  filter(sexo == "F") %>% 
+  group_by(sexo, grupo_etario) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
+  geom_col(fill="steelblue")
+
+# femenino
+data_per %>% 
+  filter(sexo == "F") %>% 
+  group_by(sexo, grupo_etario) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
+  geom_col(fill="chocolate")
+
+# masculino
+data_per %>% 
+  filter(sexo == "M") %>% 
+  group_by(sexo, grupo_etario) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x = n, y = factor(grupo_etario), fill = sexo)) +
+  geom_col(fill="steelblue")
+```
+
+
+
+  
 
 # Análisis mas detallados
 
