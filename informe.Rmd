@@ -38,7 +38,7 @@ library(lubridate)
 
 ## Importar datos -> Muestra
 Se importan los datos en un dataframe de nombre `data`. Se limita la cantidad máxima de filas a importar en la variable `mi_muestra_registros`.
-```{r importa_muestra, echo=TRUE}
+```{r importa_muestra, echo=TRUE, message = FALSE}
 rm(list = ls())
 set.seed(8)
 
@@ -110,7 +110,9 @@ A continuacion se realizó un join entre la `data_persona` y `data_registro`, y 
 data_persona %>% 
   group_by(id_persona_dw) %>% 
   summarise(n = n()) %>%
-  arrange(desc(n))
+  arrange(desc(n)) %>% 
+  head(10) %>% 
+  knitr::kable(caption = "Muestra con repitencia de personas", col.names = c("Código ID de persona", "Duplicados"))
 
 # personas con multiples registros en su `max(fecha_aplicacion)` -> a esta altura seria prudente cruzar toda la base no solamente con la fecha maxima de aplicacion sino toda group_by(id_persona_dw, fecha_aplicacion)
 
@@ -132,10 +134,10 @@ data_persona_unica <- data_persona %>%
 
 
 ```
+
 ## Join de `data_persona_unica` & `data_registro` 
 Union de `data_persona` con `data_registro` de esas personas y solamente de esas personas.
-```{r prueba_right_join}
-
+```{r prueba_right_join, include=FALSE}
 # Primera base de datos con personas (sin repetirse)
 data_persona_unica %>% 
   group_by(id_persona_dw) %>% 
@@ -147,8 +149,10 @@ data_persona_unica %>%
 
 # Realizar el join uno a muchos
 data_join <- inner_join(data_persona_unica, data_registro, by = "id_persona_dw")
+```
 
 
+```{r comprueba_right_join}
 # compruebo que los valores de la lista de `id_persona` de `data_persona_multiple` no se encuentren comprendidos en los valores de la lista de `id_persona` de `data_join`. La que de ahora en adelante será nuestra base de registros multiples de aquella otra base de personas unicas.
 vector_logico <- data_persona_multiple$id_persona_dw %in% data_join$id_persona_dw
 # Comprobar si hay al menos un TRUE
@@ -170,13 +174,16 @@ assign("data_reg", data_join, envir = .GlobalEnv)
 data_reg %>% 
   group_by(id_persona_dw) %>% 
   summarise(n = n()) %>% 
-  arrange(desc(n))
+  arrange(desc(n)) %>% 
+  head(10) %>% 
+  knitr::kable(caption = "Base registros de vacunacion de la muestra de sujetos-Q", col.names = c("Código ID persona", "Cantidad de registros"))
 
 data_per %>% 
   group_by(id_persona_dw) %>% 
   summarise(n = n()) %>% 
-  arrange(desc(n))
-
+  arrange(desc(id_persona_dw)) %>% 
+  head(10) %>%
+  knitr::kable(caption = "Base personas de la muestra de sujetos-Q", col.names = c("Código ID persona", "Cantidad de registros"))
 
 # elimino los demas df creados para comprobacion y busqueda de registros unicos y multiples.
 rm(data_join, data_registro, data_persona, data_persona_multiple, data_persona_unica, vector_logico, existe_true)
@@ -215,17 +222,11 @@ Quiero saber entre que fechas dispongo de informacion de registros de vacunació
 fecha_0 <- summarise(data_reg, min(fecha_aplicacion))
 fecha_T <- summarise(data_reg, max(fecha_aplicacion))
 
-#fecha_0_st <- paste0(year(fecha_0),"-" , month(fecha_0),"-", day(fecha_0))
-#fecha_T_st <- paste0(year(fecha_T),"-" , month(fecha_T),"-", day(fecha_T))
-
-#fecha_0_formateada <- format(fecha_0, "%Y-%m-%d")
-#fecha_T_formateada <- format(fecha_T, "%Y-%m-%d")
-
 print(paste0("la primer fecha disponible es del ", fecha_0, " y la ultima fecha de actualizacion es del ", fecha_T))
 
-#La primer observacion se registró el **`r fecha_0`** y la última se registró el **`r fecha_T`**.
 rm(fecha_0, fecha_T)
 ```
+La primer observacion se registró el **`r summarise(data_reg, min(fecha_aplicacion))`** y la última se registró el **`r summarise(data_reg, max(fecha_aplicacion))`**.
 
 #### Rango y magnitud de la base (cantidad de observaciones y variables)
 Se presentan las dimensiones de la base que sirve de registros.
@@ -233,7 +234,7 @@ Se presentan las dimensiones de la base que sirve de registros.
 obs_filas <- nrow(data_reg) # cantidad de observaciones (filas)
 obs_cols <- ncol(data_reg) # cantidad de variables (columnas)
 obs_valores = obs_filas * obs_cols # cantidad de datos (celdas)
-dim(data_reg)
+# dim(data_reg)
 
 print(paste0("Los datos se estructuran en : ", obs_filas, " observaciones (filas) y ", obs_cols, " variables (columnas). Tenemos un total de ", obs_valores, " valores o celdas con datos."))
 
@@ -242,36 +243,54 @@ print(paste0("Los datos se estructuran en : ", obs_filas, " observaciones (filas
 rm(obs_filas, obs_cols, obs_valores)
 ```
 
-Cantidad de filas_observaciones (n): `r nrow(data)`
+Cantidad de filas_observaciones (n): `r nrow(data_reg)`
 
-Cantidad de columnas_variables (m): `r ncol(data)`
+Cantidad de columnas_variables (m): `r ncol(data_reg)`
 
-Dimensiones, n | m: `r dim(data)`
+Dimensiones, n | m: `r dim(data_reg)`
 
-Cantidad de celdas_valores (nxm): `r nrow(data)*ncol(data)`
+Cantidad de celdas_valores (nxm): `r nrow(data_reg)*ncol(data_reg)`
 
 ### Descripción de variables de interés
 Presentacion de las variables, a título informativo estos son los nombres. A continuación se seleccionan algunas variables para brindar mayores detalles de las mismas.
 ```{r colnames}
+
 colnames(data_per)
+
+# vector logico que itera en las columnas de mi data frame.
+columnas_ch <- sapply(data_per, is.character)
+
+# utilizo el vector logico para traer un nuevo vector con los nombres que dan TRUE en el anterior
+columnas_ch <- names(data_per)[columnas_ch]
+
+varlist_ch <- columnas_ch[-c(4, 5, 6, 8, 9, 10, 14)] 
+varlist_ch <- matrix(varlist_ch, ncol = 1)
+
+columnas_ch <- matrix(columnas_ch, ncol = 1)
+
+
 ```
 Estas son todas las variables disponibles.
 
 #### Dominio de las variables (valores únicos)
 Se presentan a continuación los valores posibles que registran algunas de las variables, algo a lo que también haremos referencia como su dominio.
-```{r summary_data_levels_factor, eval=TRUE, echo=TRUE, include=TRUE, paged.print=FALSE}
+```{r summary_data_levels_factor, eval=TRUE, echo=TRUE, include=TRUE, paged.print=TRUE}
 
-varlist <- c("sexo","grupo_etario","condicion_aplicacion","vacuna", "nombre_dosis_generica", "orden_dosis")
-for (vardin in varlist){
+#varlist <- c("sexo","grupo_etario","condicion_aplicacion","vacuna", "nombre_dosis_generica", "orden_dosis")
+
+for (vardin in varlist_ch){
   var_output <- data_reg[[vardin]]
+  cat("\n")
+  print(paste0("Niveles de la variable:", ""))
   print(levels(factor(var_output)))
+  cat("\n")
   #distinct(data, var_output)
 }
 
 #summary(data) # comento summary porque al no tratarse de una base muy numerica no me sirve de mucho este resumen.
 
-#rm(fecha_0, fecha_T, obs_cols, obs_filas, obs_valores, file_path)
-rm(var_output, varlist, vardin)
+# rm(fecha_0, fecha_T, obs_cols, obs_filas, obs_valores, file_path)
+# rm(var_output, varlist, vardin)
 
 ```
 Breve descripción del tipo de datos disponibles en NOMIVAC. La gran mayoría son character, excepcion de fecha y orden dosis, así como  variables id_codigos asociadas a otras descripcion_codigos.
@@ -315,7 +334,7 @@ Mas adelante, en la próxima sección, se realizan análisis **dinámicos** de l
 
 Obtengo algunos df sobre las cantidades y participación de la población objetivo de la vacunación desde diferentes perspectivas como son el `sexo`, `grupo_etario`, `condicion_aplicacion` y otras. Las observaciones anteriores de personas son filtradas por la variable `fecha_aplicacion` para conservar en análisis unicamente un registro, el mas actualizado por sujeto.
 
-```{r ls_genvar_estdesc_estdisticas_loop, eval=TRUE, include=TRUE}
+```{r ls_genvar_estdesc_estdisticas_loop, eval=TRUE, warning=FALSE, include=TRUE}
 
 # Seleccion de variables para armado de tablas de estadisticos descriptivos:
 varlist <- c("sexo", "grupo_etario", "condicion_aplicacion", "vacuna", "nombre_dosis_generica", "lote_vacuna", "jurisdiccion_aplicacion", "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
@@ -326,7 +345,7 @@ source("scripts/loop_estadisticos_descriptivos.R")
 ```
 Se realizó un loop para obtener estadisticas de cada agrupamiento segun la cantidad de dosis. Como se puede observar la suma de la variable `total_dosis` excede por bastante la cantidad de registros importados, esto es así, ya que no se importó toda la base, y los registros obtenidos ya tienen historial de vacunaciones anteriores.
 
-```{r obtener_mas_abs_mas_rel}
+```{r obtener_mas_abs_mas_rel, include=FALSE}
 #varias formas de jugar con listas:
 ls_genvar_texto[["sexo"]]["sexo"] ## abs
 ls_genvar_texto[["sexo"]]["sexo.1"] ## rel
@@ -336,77 +355,225 @@ max(ls_genvar_estdesc[["sexo"]]["mean_dosis"])
 
 ```
 
-Para copiar y pegar debajo de var_obtener_estadisticos: 
-```{r mejorar_incorporar_o_eliminar}
-#Esta base con fecha de corte hasta `r fecha_i` y agrupación por `r vardin`, la población `r mas_abs` recibió `r varstat` mas vacunas en valor absoluto y `r mas_rel` en promedio.
-```
-
-
 ```{r grafico_estandar_function}
 print("la funcion de graficar no funciona")
 print("grafico_estandar(ls_genvar_estdesc$condicion_aplicacion, condicion_aplicacion, total_dosis)")
 ```
+### CHILD SUPPORT PLEASE
+https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
+```{r hijitus, eval=FALSE, include=FALSE, results='asis'}
+res <- knitr::knit_child("scripts/variable_resume_estdesc_texto_graph.Rmd", quiet = TRUE)
+cat(res, sep = '\n')
+```
+
 
 
 ### Variable `sexo`
 ```{r sexo_general, include=TRUE}
-#Sexo
-ls_genvar_estdesc$sexo
+
+ls_genvar_estdesc$sexo %>% 
+  knitr::kable(caption = "Variable Sexo: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
 ```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["sexo"]]["sexo"]` con `r max(ls_genvar_estdesc[["sexo"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor ralativo es: `r ls_genvar_texto[["sexo"]]["sexo.1"]` con `r round(max(ls_genvar_estdesc[["sexo"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
+```{r sexo_grafico_estandar, fig.show='hold', out.width = "50%"}
 
-```{r sexo_grafico_estandar}
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, total_dosis)) +
-  geom_col()
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
 ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$sexo %>% 
+  ggplot(mapping = aes(sexo, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","sexo", "_","mean_dosis", ".png"))
 ```
+.
+.
+.
+.
+.
+ 
 
 ### Variable `grupo_etario`
-```{r grupo_etario_general}
-ls_genvar_estdesc$grupo_etario
+```{r grupo_etario_general, include=TRUE}
+
+ls_genvar_estdesc$grupo_etario %>% 
+  knitr::kable(caption = "Variable Grupo_etario: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
 ```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario"]` con `r max(ls_genvar_estdesc[["grupo_etario"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario.1"]` con `r round(max(ls_genvar_estdesc[["grupo_etario"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
+```{r grupo_etario_grafico_estandar, fig.show='hold', out.width = "50%"}
 
-```{r grupo_etario_grafico_estandar}
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, total_dosis)) +
-  geom_col()
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
 ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$grupo_etario %>% 
+  ggplot(mapping = aes(grupo_etario, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","mean_dosis", ".png"))
 ```
+.
+.
+.
+.
+.
+
 
 ### Variable `condicion_aplicacion`
-```{r condicion_aplicacion_general}
-ls_genvar_estdesc$condicion_aplicacion
-```
+```{r condicion_aplicacion_general, include=TRUE}
 
-
-```{r condicion_aplicacion_grafico_estandar}
 ls_genvar_estdesc$condicion_aplicacion %>% 
-  ggplot(mapping = aes(condicion_aplicacion, participacion)) +
-  geom_col()
-ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
+  knitr::kable(caption = "Variable Condicion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
 ```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion"]` con `r max(ls_genvar_estdesc[["condicion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["condicion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
+
+```{r condicion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$condicion_aplicacion %>% 
+  ggplot(mapping = aes(condicion_aplicacion, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$condicion_aplicacion %>% 
+  ggplot(mapping = aes(condicion_aplicacion, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+
 
 ### Variable `jurisdiccion_aplicacion`
-```{r jurisdiccion_aplicacion_general}
-ls_genvar_estdesc$jurisdiccion_aplicacion
-```
+```{r jurisdiccion_aplicacion_general, include=TRUE}
 
-
-```{r jurisdiccion_aplicacion_grafico_estandar}
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
-  ggplot(mapping = aes(participacion, jurisdiccion_aplicacion)) +
-  geom_col()
-ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
+  knitr::kable(caption = "Variable Jurisdiccion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
 ```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion"]` con `r max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
+
+```{r jurisdiccion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
+  ggplot(mapping = aes(jurisdiccion_aplicacion, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
+  ggplot(mapping = aes(jurisdiccion_aplicacion, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+
+
+### Variable `vacuna`
+```{r vacuna_general, include=TRUE}
+
+ls_genvar_estdesc$vacuna %>% 
+  knitr::kable(caption = "Variable Vacuna: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["vacuna"]]["vacuna"]` con `r max(ls_genvar_estdesc[["vacuna"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["vacuna"]]["vacuna.1"]` con `r round(max(ls_genvar_estdesc[["vacuna"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
+
+```{r vacuna_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$vacuna %>% 
+  ggplot(mapping = aes(vacuna, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$vacuna %>% 
+  ggplot(mapping = aes(vacuna, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","vacuna", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
 
 ### Variables `max(fecha_aplicacion)` y `orden_dosis`
 ```{r vacunas_orden_dosis_general}
 varlist <- c("orden_dosis", "fecha_aplicacion")
 for (esta_variable in varlist) {
   desctabla <- data_per %>% group_by(.data[[esta_variable]]) %>% summarise(n = n()) %>% mutate(prop = n / sum(n)*100)  
-  print(desctabla)
+  print(desctabla) %>% 
+    knitr::kable(caption = "Agrupamiento, Registros y Participación")
   
 # almacenar en lista
 ls_genvar_estdesc[[esta_variable]] <- desctabla
@@ -740,13 +907,14 @@ rm(jresidentes, jnoresidentes, jno_residentes)
 # reordeno, mejor lectura
 col_order <- c("jurisdiccion", "n_residencia", "res_fix", "res_nofix", "n_aplicacion", "nores_fix", "vac_extra") 
 jurisdicciones_poblacion <- jurisdicciones_poblacion %>% 
-  select(col_order)
+  select(all_of(col_order)) %>% 
+  knitr::kable(col.names = c("Jurisdiccion", "Residentes", "Residentes vacunados in situ", "Residentes vacunados out situ", "Poblacion vacunada in situ", "No residentes vacunados in situ", "Saldo de vacunados neto"))
 # alternativa de reorden
 #jurisdicciones_poblacion <- jurisdicciones_poblacion[, col_order]
 
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 ggplot(data[["jurisdiccion_aplicacion"]]) +
   aes(x = reorder(jurisdiccion_aplicacion,N), y = N) +
   geom_col(fill = "#228B22") +
@@ -764,15 +932,17 @@ ggplot(data[["jurisdiccion_aplicacion"]]) +
 ```{r grafico_jurisdicciones_vacunacion}
 
 # aplicaciones segun residencia de cada jurisdiccion.
-ggplot(jurisdicciones_poblacion, aes(n_aplicacion, jurisdiccion)) + 
-  geom_col(aes(res_fix, jurisdiccion, color = "blue")) + 
-  geom_col(aes(nores_fix, jurisdiccion, color = "green"))
+#ggplot(jurisdicciones_poblacion, aes(n_aplicacion, jurisdiccion)) + 
+#  geom_col(aes(res_fix, jurisdiccion, color = "blue")) + 
+#  geom_col(aes(nores_fix, jurisdiccion, color = "green"))
   
 data_reg %>% 
   group_by(jurisdiccion_aplicacion, jurisdiccion_residencia) %>% 
   summarise(n = n()) %>% 
   arrange(desc(n)) %>% 
-  ggplot(aes(n, jurisdiccion_aplicacion, fill = jurisdiccion_residencia)) + geom_col()
+  ggplot(aes(n, jurisdiccion_aplicacion, fill = jurisdiccion_residencia)) + 
+  geom_col() +
+  labs(title = "Jurisdiccion de residencia y de aplicacion, barras de colores")
 
 ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion1" ,".png"))
 
@@ -796,7 +966,7 @@ ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion2" ,".png"))
 
 ```{r grupo_etario_jovenes}
 jovenes <- data_reg %>%
-  mutate(grupo_etario_proxy = substr(grupo_etario, nchar(grupo_etario) - 2, nchar(grupo_etario)), 
+  mutate(grupo_etario_proxy = as.numeric(substr(grupo_etario, nchar(grupo_etario) - 2, nchar(grupo_etario))), 
          jovenes = ifelse(grupo_etario_proxy < 30, "joven", "adulto")) %>% 
   select(grupo_etario, grupo_etario_proxy, jovenes)
 

@@ -40,11 +40,11 @@ for (var in varlist) {
   textabla <- data.frame(abs = mas_abs[1,1], rel = mas_rel[1,1])
   ls_genvar_texto[[var]] <- textabla
   
-  print(".")
-  print(".")
-  print(var)
-  print(paste0("La población que mas rebició vacunas en valor absoluto es: ", mas_abs))
-  print(paste0("La población que mas rebició vacunas en valor relativo es: ", mas_rel))
+  #print(".")
+  #print(".")
+  #print(var)
+  #print(paste0("La población que mas rebició vacunas en valor absoluto es: ", mas_abs))
+  #print(paste0("La población que mas rebició vacunas en valor relativo es: ", mas_rel))
   
     
   

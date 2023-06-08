@@ -1,0 +1,199 @@
+
+### Variable `sexo`
+```{r sexo_general, include=TRUE}
+
+ls_genvar_estdesc$sexo %>% 
+  knitr::kable(caption = "Variable Sexo: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["sexo"]]["sexo"]` con `r max(ls_genvar_estdesc[["sexo"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relatico es: `r ls_genvar_texto[["sexo"]]["sexo.1"]` con `r max(ls_genvar_estdesc[["sexo"]]["mean_dosis"])` dosis promedio aplicadas sobre este grupo.
+
+```{r sexo_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$sexo %>% 
+  ggplot(mapping = aes(sexo, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$sexo %>% 
+  ggplot(mapping = aes(sexo, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","sexo", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+ 
+
+### Variable `grupo_etario`
+```{r grupo_etario_general, include=TRUE}
+
+ls_genvar_estdesc$grupo_etario %>% 
+  knitr::kable(caption = "Variable Grupo_etario: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario"]` con `r max(ls_genvar_estdesc[["grupo_etario"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relatico es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario.1"]` con `r max(ls_genvar_estdesc[["grupo_etario"]]["mean_dosis"])` dosis promedio aplicadas sobre este grupo.
+
+```{r grupo_etario_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$grupo_etario %>% 
+  ggplot(mapping = aes(grupo_etario, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$grupo_etario %>% 
+  ggplot(mapping = aes(grupo_etario, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+
+
+### Variable `condicion_aplicacion`
+```{r condicion_aplicacion_general, include=TRUE}
+
+ls_genvar_estdesc$condicion_aplicacion %>% 
+  knitr::kable(caption = "Variable Condicion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion"]` con `r max(ls_genvar_estdesc[["condicion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relatico es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion.1"]` con `r max(ls_genvar_estdesc[["condicion_aplicacion"]]["mean_dosis"])` dosis promedio aplicadas sobre este grupo.
+
+```{r condicion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$condicion_aplicacion %>% 
+  ggplot(mapping = aes(condicion_aplicacion, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$condicion_aplicacion %>% 
+  ggplot(mapping = aes(condicion_aplicacion, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+
+
+### Variable `jurisdiccion_aplicacion`
+```{r jurisdiccion_aplicacion_general, include=TRUE}
+
+ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
+  knitr::kable(caption = "Variable Jurisdiccion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion"]` con `r max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relatico es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion.1"]` con `r max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["mean_dosis"])` dosis promedio aplicadas sobre este grupo.
+
+```{r jurisdiccion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
+  ggplot(mapping = aes(jurisdiccion_aplicacion, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
+  ggplot(mapping = aes(jurisdiccion_aplicacion, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
+HAY ERRORES COMO "RELATICO" Y DOSIS TOTALES DE TITULO EN GRAFICOS DE DOSIS MEAN- ESTA VERSION ES ANTERIOR. EN INFORME ESTA CORREGIDO.
+
+### Variable `vacuna`
+```{r vacuna_general, include=TRUE}
+
+ls_genvar_estdesc$vacuna %>% 
+  knitr::kable(caption = "Variable Vacuna: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
+               col.names = c("Grupo", 
+                             "Dosis mínima", 
+                             "Dosis promedio", 
+                             "Dosis máxima", 
+                             "Dosis totales", 
+                             "Población", 
+                             "Participación"))
+
+```
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["vacuna"]]["vacuna"]` con `r max(ls_genvar_estdesc[["vacuna"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor relatico es: `r ls_genvar_texto[["vacuna"]]["vacuna.1"]` con `r max(ls_genvar_estdesc[["vacuna"]]["mean_dosis"])` dosis promedio aplicadas sobre este grupo.
+
+```{r vacuna_grafico_estandar, fig.show='hold', out.width = "50%"}
+
+ls_genvar_estdesc$vacuna %>% 
+  ggplot(mapping = aes(vacuna, total_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
+
+ls_genvar_estdesc$vacuna %>% 
+  ggplot(mapping = aes(vacuna, mean_dosis)) +
+  geom_col() +
+  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
+
+ggsave(paste0("png/grafico_estandar_","vacuna", "_","mean_dosis", ".png"))
+```
+.
+.
+.
+.
+.
