@@ -43,165 +43,27 @@ library(lubridate)
 Se importan los datos en un dataframe de nombre `data`. Se limita la cantidad máxima de filas a importar en la variable `mi_muestra_registros`.
 ```{r importa_muestra, echo=TRUE, message = FALSE}
 rm(list = ls())
-set.seed(8)
-
-# Defino mi sample registros
+# Defino mi muestra de registros
 mi_muestra_registros <- 100000
-
-# Data filepath
-file_path <- "datos/datos_nomivac_covid19.csv"
-
-#data <- read_csv(file_path, n_max = 10000, show_col_types = FALSE, col_select = c(id_persona_dw, fecha_aplicacion)) ## queria hacer un join luego de obtener un recorte por ultima fecha y sample.
-
-# Import / read data
-data_registro <- read_csv(file_path, n_max = mi_muestra_registros, show_col_types = FALSE)
-obs_filas <- nrow(data_registro)
-print(paste("Reporte parcial: Se cargan:", obs_filas, "sobservaciones."))
-#Reporte parcial: Se cargan `r nrow(data)` observaciones. 
-
-rm(obs_filas, file_path, mi_muestra_registros)
+source("scripts/importar-datos.R")
 ```
-```{r aproximar_reg_unicos, eval=FALSE, include=FALSE}
-data_registro %>% 
-  group_by(id_persona_dw, fecha_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n))
-
-data_registro %>% 
-  group_by(id_persona_dw, fecha_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n)) %>% 
-  filter(n == 1)
-
-data_registro %>% 
-  group_by(id_persona_dw, fecha_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n)) %>% 
-  filter(n != 1)
-
+## Limpieza de observaciones duplicadas
+Se conservan registros unicamente de personas que para su ultima fecha de vacunacion presentan un unico registro. Es decir, si la persona en su ultima vacunacion aparece en mas de una fila se elimina. Para más detalles, consultar el script a continuacion. Se almacenan 2 data sets:
+1. data 1 persona: 1 fila, el último registro `data_per`. Esta representa una *"foto"* estática o estado de situación de vacunación del individuo hasta un momento dado.
+1. data 1 persona: 1 =< filas (registros de vacunación) `data_reg`.
+```{r}
+source("scripts/data_filter_duplicados.R")
 ```
 
-### Muestra -> Sample
-Se realiza un **sample** de la muestra de datos importada al environment para reducir el tiempo computacional del procesamiento del informe. `mi_sample_registros`
+## Seleccion del sample
+Se realiza un **sample** de la muestra de datos importada y filtrada al environment para reducir el tiempo computacional del procesamiento del informe. `mi_sample_registros`
 ```{r muestra_sample}
 # Defino mi sample registros
 mi_sample_registros <- 10000
-
-# Mi sample persona es la muestra de personas que se extrae. Esto va implicar que estas son las personas que tendran inclusion en el analisis y que son quienes daran valores a las tablas, graficos, etc. Adicionalmente estas personas y sus registros de vacunacion seran incluidos en los analisis temporales de la ultima parte.
-data_registro <- data_registro[sample(1:nrow(data_registro), mi_sample_registros, replace = TRUE), 1:18]
-rm(mi_sample_registros)
+source("scripts/data_sample.R")
 ```
 
-#### Muestra -> Sample -> Registros únicos por cada persona (max(fecha))
-Sobre la muestra aleatoria obtenida se seleccionan los **últimos registros** de vacunacion de cada persona. Se obtiene así una *"foto"* estática de esas personas en el momento mas actualizado. `data_persona`
-```{r muestra_sample_persona}
-data_persona <- data_registro %>% 
-  group_by(id_persona_dw) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion))
-
-#data_persona <- data_persona[,]
-```
-
-## Registros múltiples 
-A continuacion se realizó un join entre la `data_persona` y `data_registro`, y como resultado se obtiene un mensaje de **many to many**. Se esperaba que fuera una base de **one to many** al obtener para la base personas el último registro de vacunación dado por la `fecha_aplicacion`. El resultado motivó a indagar más alcanzando la conclusión que la base tiene algunos errores o duplicados que se quitan a continuación. Abajo una posible solución de quitarlos de análisis.
-```{r descubrimiento_repetidos}
-# se descubrio que varias personas tiene multiples registros en la misma fecha. Habria que inspeccionar mas detalles sobre esas personas y esas fechas de aplicacion en las que coinciden varios registros.
-
-# data_persona = # 9804 total de registros "personas" -> pero no porque hay registros multiples dentro de la misma fecha: `max(fecha_aplicacion)`.
-
-# data_persona: # 9296 entre unicos y multiples
-data_persona %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>% 
-  head(10) %>% 
-  knitr::kable(caption = "Muestra con repitencia de personas", col.names = c("Código ID de persona", "Duplicados"))
-
-# personas con multiples registros en su `max(fecha_aplicacion)` -> a esta altura seria prudente cruzar toda la base no solamente con la fecha maxima de aplicacion sino toda group_by(id_persona_dw, fecha_aplicacion)
-
-# data_persona_multiple: 491 registros de personas con multiples.
-data_persona_multiple <- data_persona %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>% 
-  filter(n != 1) %>% 
-  select(id_persona_dw)
-
-# data_persona_unica: 8805 registros de personas con unicas.
-data_persona_unica <- data_persona %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>% 
-  filter(n == 1) %>% 
-  select(id_persona_dw)
-
-
-```
-
-## Join de `data_persona_unica` & `data_registro` 
-Union de `data_persona` con `data_registro` de esas personas y solamente de esas personas.
-```{r prueba_right_join, include=FALSE}
-# Primera base de datos con personas (sin repetirse)
-data_persona_unica %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n)) ## chequeado que son `id_persona_dw` unicas
-
-# Segunda base de datos con todos los registros
-# data_registro
-
-# Realizar el join uno a muchos
-data_join <- inner_join(data_persona_unica, data_registro, by = "id_persona_dw")
-```
-
-
-```{r comprueba_right_join}
-# compruebo que los valores de la lista de `id_persona` de `data_persona_multiple` no se encuentren comprendidos en los valores de la lista de `id_persona` de `data_join`. La que de ahora en adelante será nuestra base de registros multiples de aquella otra base de personas unicas.
-vector_logico <- data_persona_multiple$id_persona_dw %in% data_join$id_persona_dw
-# Comprobar si hay al menos un TRUE
-existe_true <- any(vector_logico)
-if (existe_true) {
-  print("El vector contiene al menos un TRUE, entonces la lista de registros unicos aun tiene registros multiples.")
-} else {
-  print("El vector no contiene ningún TRUE, entonces la lista de registros unicos es cierta.")
-}
-
-# Genero la base personas unicas final:
-data_per <- data_join %>% 
-  group_by(id_persona_dw) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion))
-
-# Genero la base registros de personas unicas final
-assign("data_reg", data_join, envir = .GlobalEnv)
-
-data_reg %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n)) %>% 
-  head(10) %>% 
-  knitr::kable(caption = "Base registros de vacunacion de la muestra de sujetos-Q", col.names = c("Código ID persona", "Cantidad de registros"))
-
-data_per %>% 
-  group_by(id_persona_dw) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(id_persona_dw)) %>% 
-  head(10) %>%
-  knitr::kable(caption = "Base personas de la muestra de sujetos-Q", col.names = c("Código ID persona", "Cantidad de registros"))
-
-# elimino los demas df creados para comprobacion y busqueda de registros unicos y multiples.
-rm(data_join, data_registro, data_persona, data_persona_multiple, data_persona_unica, vector_logico, existe_true)
-
-```
-
-Me gustaría importar los datos de todas las personas, solamente variable `id_persona_dw`, para no sobrecargar de datos la memoria de la pc. Luego armar una base de registros `id_persona_dw` unicos de 5000 observaciones y luego alli hacer un join para todas esas personas ID traer toda la informacion de sus vacunaciones. La dificultad de realizar este paso es que no se permite hacer joins_ con bases no cargadas al environment de RSTUDIO.
-```{r prueba_merge_toda_variable_toda_base_out_environment}
-# file_path <- "datos/datos_nomivac_covid19.csv"
-# base_completa <- read_csv(file_path)[1:10,18:18]
-# base_completa <- read_csv(file_path, col_select = c(id_persona_dw), n_max = 10, show_col_types = FALSE)
-# left_join(data, "datos/datos_nomivac_covid19.csv", by = id_persona_dw)
-```
-
-## Exploración de los datos
+# Exploración de los datos
 
 :::{.alert .alert-info}
 
@@ -213,13 +75,12 @@ Esta sección contiene una breve descripcion de los datos cargados.
 
 * Descripcion de variables de interés
   * Dominio de las variables (valores únicos)
-  * Normalizacion de valores
-
+  
 :::
 
-### Estructura de los datos
+## Estructura de los datos
 
-####  Intervalo de fechas del registro (primero y último del recorte)
+###  Intervalo de fechas del registro (primero y último del recorte)
 Quiero saber entre que fechas dispongo de informacion de registros de vacunación.
 ```{r fechas_intervalo_no_funca_formatos}
 fecha_0 <- summarise(data_reg, min(fecha_aplicacion))
@@ -298,14 +159,57 @@ for (vardin in varlist_ch){
 ```
 Breve descripción del tipo de datos disponibles en NOMIVAC. La gran mayoría son character, excepcion de fecha y orden dosis, así como  variables id_codigos asociadas a otras descripcion_codigos.
 
-#### Adecuación de valores (edición, agrupación y homogeneización)
+# Manipulacion de datos.
+
+## Agregacion de variables temporales.
+Se hace uso de lubridate para sobreescribir las bases de datos de registros y de personas con variables que identifican unidades temporales diferentes.
+```{r mutate_data_lubridate}
+source("scripts/data_mutate_lubridate.R")
+```
+
+## Adecuación de valores (edición, agrupación y homogeneización)
 En el siguiente archivo `scripts/normalizacion-variables-valores.R` se renombran variables, se remplazan valores de variables y se agrupan valores.
-```{r normalizacion_valores, eval=TRUE, echo=TRUE, include=TRUE, paged.print=FALSE}
+```{r normalizacion_valores, eval=TRUE, echo=FALSE, include=TRUE, paged.print=FALSE}
 source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = TRUE)
 ```
 
-## Generación de tablas y gráficos exploratorios de variables de interés
+## Generación de objetos de environment
+```{r ls_genvar_estdesc, echo = TRUE, warning=FALSE, include=TRUE}
+# Seleccion de variables para armado de tablas de estadisticos descriptivos:
+varlist <- c("sexo", "grupo_etario", "condicion_aplicacion",
+             "vacuna", "nombre_dosis_generica", "lote_vacuna", 
+             "jurisdiccion_aplicacion", "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
+source("scripts/ls_genvar_estdesc.R")
+```
+:::{.alert .alert-info}
+Esta sección sirve para compartimentar la generacion de nuevos objetos dentro del enviroment.
 
+Se crean objetos para utilizacion en tablas y gráficos exploratorios de variables de interés
+
+* Se generan listas:
+  * `ls_genvar_estdesc` una lista que contiene agrupaciones por variable generica de interes (chars) y expresa para esos grupos las siguientes columnas: 
+    * Agrupamiento segun `variable de interes` (char) `ls_genvar_estdesc[["var"]][1]`.
+    * Valores mínimos, medios y máximos de `orden_dosis` (cantidad de dosis) `ls_genvar_estdesc[["var"]][2:4]`.
+    * Cantidad de registros acumulados por grupo (N_i * mean_i) `ls_genvar_estdesc[["var"]][5]`.
+    * Población (N_i): cantidad de miembros que componen el grupo `ls_genvar_estdesc[["var"]][6]`.
+    * Población relativa (N_rel): participación del grupo sobre el total de individuos.`ls_genvar_estdesc[["var"]][7]`.
+  * `ls_genvar_texto` una lista que contiene el nombre de cada grupo de cada variable generica de interes (chars) que expresa el grupo mas aplicado en cantidad de dosis:
+    * Agrupamiento segun `variable de interes` (char)
+    * Grupo con mayor cantidad *absoluta* de dosis recibidas `ls_genvar_texto[["var"]][1]`.
+    * Grupo con mayor cantidad *promedio* de dosis recibidas `ls_genvar_texto[["var"]][2]`.
+
+:::
+
+```{r df_aplicaciones_diarias}
+source("scripts/df_aplicaciones_diarias.R")
+```
+
+```{r ls_timvar_sumdosis_loop}
+source("scripts/ls_timvar_sumdosis.R")
+```
+
+
+# Variables de Interes: Tablas y gráficos 
 :::{.alert .alert-info}
 
 Esta sección contiene visualizaciones tabulares y gráficas estandarizadas y **estáticas** para variables de interés. 
@@ -333,27 +237,14 @@ Mas adelante, en la próxima sección, se realizan análisis **dinámicos** de l
   
 :::
 
-### Loop estadísticos descriptivos de variables de interes
-
-Obtengo algunos df sobre las cantidades y participación de la población objetivo de la vacunación desde diferentes perspectivas como son el `sexo`, `grupo_etario`, `condicion_aplicacion` y otras. Las observaciones anteriores de personas son filtradas por la variable `fecha_aplicacion` para conservar en análisis unicamente un registro, el mas actualizado por sujeto.
-
-```{r ls_genvar_estdesc_estdisticas_loop, eval=TRUE, warning=FALSE, include=TRUE}
-
-# Seleccion de variables para armado de tablas de estadisticos descriptivos:
-varlist <- c("sexo", "grupo_etario", "condicion_aplicacion", "vacuna", "nombre_dosis_generica", "lote_vacuna", "jurisdiccion_aplicacion", "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
-
-source("scripts/loop_estadisticos_descriptivos.R")
-
-#ls_genvar_estdesc
-```
-Se realizó un loop para obtener estadisticas de cada agrupamiento segun la cantidad de dosis. Como se puede observar la suma de la variable `total_dosis` excede por bastante la cantidad de registros importados, esto es así, ya que no se importó toda la base, y los registros obtenidos ya tienen historial de vacunaciones anteriores.
 
 ```{r obtener_mas_abs_mas_rel, include=FALSE}
 #varias formas de jugar con listas:
 ls_genvar_texto[["sexo"]]["sexo"] ## abs
 ls_genvar_texto[["sexo"]]["sexo.1"] ## rel
-ls_genvar_estdesc[["sexo"]]
-ls_genvar_estdesc[["sexo"]]$mean_dosis[2]
+ls_genvar_estdesc[["sexo"]]["mean_dosis"][,1]
+ls_genvar_estdesc[["sexo"]]$mean_dosis[c(1,3)]
+min(ls_genvar_estdesc[["sexo"]]["mean_dosis"])
 max(ls_genvar_estdesc[["sexo"]]["mean_dosis"])
 
 ```
@@ -367,6 +258,8 @@ https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
 ```{r hijitus, eval=FALSE, include=FALSE, results='asis'}
 res <- knitr::knit_child("scripts/variable_resume_estdesc_texto_graph.Rmd", quiet = TRUE)
 cat(res, sep = '\n')
+
+print("mi informe consta de varios pasos que si se me permite me gustaria dejar todo metido en un script, o tambien dejarlos en rmd y llamarlos mediante child. Algo lei en bookdown pero no llegue a tener exito con la prueba.")
 ```
 
 
@@ -612,10 +505,10 @@ piramide problacional
 ```{r piramide_poblacional}
 
 # piramide poblacional por sexo y grupo_etario
-datos_piramide <- data_per %>% 
+datos_piramide <- data_reg %>% 
   group_by(sexo, grupo_etario) %>% 
   summarise(n = n()) %>% 
-  subset(sexo != "S.I.")
+  subset(sexo != "S.I.") # quito uno de los valores de sexo.
   
 # invierto el signo de poblacion para los masculinos
 datos_piramide$n <- ifelse(datos_piramide$sexo == "M", -datos_piramide$n, datos_piramide$n)
@@ -655,54 +548,6 @@ Gracias Elio por el material:
 Me hubiera gustado y queda pendiente terminar la biblio generando una funcion como explica en el paso a paso.
 https://www.njtierney.com/post/2022/08/09/ggplot-pyramid/
 
-
-
-```{r}
-two_abs_age_lga <- function(lga_1, lga_2){
-  bind_rows(
-    abs_age_lga(lga_1),
-    abs_age_lga(lga_2)
-  )
-}
-
-# masculino <- two_abs_age_lga("M")
-# femenino <- two_abs_age_lga("F")
-
-data_masc <- data_per %>% 
-  filter(sexo == "M") %>% 
-  group_by(sexo, grupo_etario) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
-  geom_col(fill="chocolate")
-
-data_fem <-  data_per %>% 
-  filter(sexo == "F") %>% 
-  group_by(sexo, grupo_etario) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
-  geom_col(fill="steelblue")
-
-# femenino
-data_per %>% 
-  filter(sexo == "F") %>% 
-  group_by(sexo, grupo_etario) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(x = -n, y = factor(grupo_etario), fill = sexo)) +
-  geom_col(fill="chocolate")
-
-# masculino
-data_per %>% 
-  filter(sexo == "M") %>% 
-  group_by(sexo, grupo_etario) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(x = n, y = factor(grupo_etario), fill = sexo)) +
-  geom_col(fill="steelblue")
-```
-
-
-
-  
-
 # Análisis mas detallados
 
 ## Análisis dinámicos de los datos
@@ -717,47 +562,141 @@ En esta sección se presentan análisis dinámicos de la evolución de los datos
 
 ### Aplicaciones diarias para todo el territorio 
 
-Cantidad de dosis que se aplicaron cada día.
-```{r}
-# Obtengo data frame con aplicaciones por fecha y extiendo con el paquete lubridate.
+#Cantidad de dosis que se aplicaron cada día.
 
-## tabla de aplicaciones diarias:
-aplicaciones_diarias <- data_reg %>% 
-  group_by(fecha_aplicacion) %>% 
-  summarise(dosis = n()) %>% 
-  arrange(fecha_aplicacion)
 
-## variables tiempo con lubridate - anio mes semana dia y combinaciones. Adicionalmente para semana se especifica el formato para que no se elimine el cero delante. El cero delante ya lo deja por default para el mes.
-aplicaciones_diarias <- aplicaciones_diarias %>% 
-  mutate(anio = year(fecha_aplicacion),
-         mes = month(fecha_aplicacion),
-         semana = sprintf("%02d", week(fecha_aplicacion)),
-         dia = wday(fecha_aplicacion, label = TRUE, abbr = FALSE),
-         anio_mes = format(fecha_aplicacion, "%Y-%m"),
-         anio_semana = paste0(anio,"-",semana),
-         anio_dia = paste0(anio,"-",dia))
 
-#Ya tengo una tabla de nombre `r aplicaciones_diarias` que me permite utilizar diferentes enfoques para analizar el fenomeno temporal de la vacunacion. Voy a realizar sumas para cada unidad de tiempo y almacenar los resultados en una lista.
+```{r gh_ls_timvar_aplicaciones_diarias}
+
+# Luego de explorar posibles graficos, me resulta interesante que se vea el año que mas peso tiene en las vacunaciones, y partir de lo general a lo particular, de lo macro a lo micro. Vamos a hacer zoom en cada periodo temporal y explicar como parece que se comporta la campaña de vacunacion y la poblacion.
+
+## Grafico dosis x anio
+ls_timvar_sumdosis[["anio"]] %>% 
+  ggplot(aes(x = anio, y = suma_dosis)) +
+  geom_col(fill = "steelblue") +
+  labs(title = "Dosis aplicadas para cada año") +
+  xlab(label = "Año") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","anio", ".png"))
+## Es enorme la diferencia entre la vacunacion del anio con mas peso, el 2022, comparado con los otros 2 años disponibles.
+ls_timvar_sumdosis[["anio"]]
+
+## Grafico dosis x dia
+ls_timvar_sumdosis[["dia"]] %>% 
+  ggplot(aes(x = dia, y = suma_dosis)) +
+  geom_col(fill = "lightcoral") +
+  labs(title = "Dosis aplicadas para cada día") +
+  xlab(label = "Días") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","dia", ".png"))
+
+# Nos adentramos entonces en el anio con mayor vacunacion para ver como se ejecuto a lo largo de los meses.
+
+## Grafico dosis x mes del año 2022, fill = día
+x_range <- seq(1:12)
+x_range_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+aplicaciones_diarias %>%
+  filter(anio == 2022) %>% 
+  group_by(mes, dia) %>% 
+  summarise(suma_dosis = sum(dosis)) %>% 
+  mutate(participacion = suma_dosis / sum(suma_dosis) * 100) %>% 
+  ggplot(aes(x = mes, y = suma_dosis, fill = dia)) +
+  geom_col() +
+  scale_x_continuous(breaks = x_range, 
+                     labels = x_range_lab) +
+  labs(title = "Dosis aplicadas para cada mes del 2022") +
+  xlab(label = "Mes") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") +
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","meses_2022", ".png"))
+# Se vuelve a observar que los dias de semana son los mas registrados para aplicacion de nuevas dosis. Esta observación ya estaba presente en el gráfico anterior en que se presentaban las dosis entregadas cada día de la semana para todo el período registrado.
+
+## Grafico dosis x mes del año 2022, fill = día
+x_range_mes <- seq(1:12)
+x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+aplicaciones_diarias %>%
+  filter(anio == 2022) %>% 
+  group_by(mes, dia) %>% 
+  summarise(suma_dosis = sum(dosis)) %>% 
+  mutate(participacion = suma_dosis / sum(suma_dosis) * 100) %>% 
+  ggplot(aes(x = mes, y = suma_dosis, fill = dia)) +
+  geom_col() +
+  scale_x_continuous(breaks = x_range_mes, 
+                     labels = x_range_mes_lab) +
+  labs(title = "Dosis aplicadas para cada mes del 2022") +
+  xlab(label = "Mes") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") +
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","meses_2022", ".png"))
+
+## Para observar con mayor precision descompongo el grafico anterior en meses de todo el periodo, de esta forma obtengo una mayor granulometria que permite ver comportamiento intermensual.
+# Grafico dosis x anio_mes
+ls_timvar_sumdosis[["anio_mes"]] %>% 
+  ggplot(aes(x = anio_mes, y = suma_dosis)) +
+  geom_col() +
+  labs(title = "Dosis aplicadas para cada mes") +
+  xlab(label = "Mes") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","anio_mes", ".png"))
+
+## Aun con mas granulometria, para observar comportamiento intersemanal. 
+# Grafico dosis x anio_semana
+ls_timvar_sumdosis[["anio_semana"]] %>% 
+  ggplot(aes(x = anio_semana, y = suma_dosis)) +
+  geom_col() +
+  labs(title = "Dosis aplicadas para cada mes") +
+  xlab(label = "Mes") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","anio_semana", ".png"))
 ```
 
-```{r ls_t_sumdosis_loop}
-# Armo una lista con agrupaciones por cantidad de aplicaciones por espacio temporal
-ls_t_sumdosis = list()
 
-sumdosis_varlist <- names(aplicaciones_diarias)[-c(1,2)]
 
-for (unidad_tiempo in sumdosis_varlist){
+```{r hipotesis_1_aplicaciones_priorizados, fig.show='hold', out.width = "50%"}
+data_reg_t %>% 
+  filter(anio==2021) %>% 
+  group_by(semana, condicion_aplicacion) %>% 
+  summarise(dosis = n()) %>%
+  ggplot(aes( x = semana, y = dosis, fill = condicion_aplicacion)) +
+  geom_col() +
+  theme_classic()
 
-ls_t_sumdosis[[unidad_tiempo]] <- aplicaciones_diarias %>% 
-  group_by_at(vars(one_of({{unidad_tiempo}}))) %>% 
-  select(dosis, {{unidad_tiempo}}) %>% 
-  summarise(suma_dosis = sum(dosis)) %>%
-  mutate(part_dosis = suma_dosis / sum(suma_dosis) * 100) %>% 
-  arrange({{unidad_tiempo}})
-}
+## grafico **dosis** aplicadas por mes, anio 2021, fill con condicion_aplicacion
+data_reg_t %>% 
+  filter(anio == 2023) %>% 
+  group_by(mes, condicion_aplicacion) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
+  geom_col() +
+  theme_classic() +
+  scale_x_continuous(breaks = x_range_mes,
+                     labels = x_range_lab)
 
-#ls_t_sumdosis[["anio"]]
+## grafico **personas** aplicadas por mes, anio 2021, fill con condicion_aplicacion
+data_per_t %>% 
+  filter(anio == 2023) %>% 
+  group_by(mes, condicion_aplicacion) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
+  geom_col() +
+  theme_classic() +
+  scale_x_continuous(breaks = x_range_mes,
+                     labels = x_range_lab)
+
+
+
 ```
+
 
 :::{.alert .alert-info}
 # Analisis por días de la semana
@@ -771,8 +710,6 @@ Gráfico de las aplicaciones diarias para todas las fechas disponibles y vacunas
 ```{r lista_suma_dosis_tiempo}
 # Gráficos por cantidad de dosis aplicacion_diaria.
 
-## opcion: ver por vacuna aplicada
-ggplot(data_reg, mapping = aes(x = fecha_aplicacion, fill = vacuna)) + geom_bar(stat = "count")
 ## opcion: ver por condicion_aplicacion
 ggplot(data_reg, mapping = aes(x = fecha_aplicacion, fill = condicion_aplicacion)) + geom_bar(stat = "count")
 ## opcion: ver por anios
@@ -820,53 +757,42 @@ En esta sección se presentan relaciones entre variables con el fin de explorar 
 ```{r dosis_personas_sexos}
 
 # Obtener cantidad de personas por cantidad de dosis aplicadas y por sexo:
-dosis_personas <- data_reg %>% 
-  group_by(id_persona) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
-  group_by(orden_dosis, sexo) %>% 
-  summarise(pob = n()) %>% 
-  arrange(desc(orden_dosis))
-print(dosis_personas)
-
-dosis_personas %>% 
-  ggplot(aes(orden_dosis, pob, fill = sexo)) + 
-  geom_col() +
-  labs(title = paste0("Dosis_personas_por_sexo"))
-ggsave(paste0("png/dosis_personas_","sexo", ".png"))
+prop_sexo_dosis <- data_per %>% 
+  group_by(sexo, orden_dosis) %>% 
+  summarise(n = n()) %>% 
+  mutate(proporcion = n / sum(n) * 100) 
+prop_sexo_dosis %>% 
+  ggplot(aes(sexo, orden_dosis, fill = orden_dosis)) +
+  geom_col() + 
+  labs(title = "Proporcion de personas por cantidad de dosis de vacunas separados por sexo")
+ggsave(paste0("png/prop_","sexo_dosis", ".png"))
 
 # Armar la tabla en formato wide
-dosis_personas_w <- dosis_personas %>% 
+dosis_personas_w <- data_per %>%
+  group_by(sexo, orden_dosis) %>% 
+  summarise(n = n()) %>% 
   pivot_wider(names_from = sexo, 
-              values_from = pob, 
+              values_from = n, 
               values_fill = 0)
 print(dosis_personas_w)
 
 # Armar una tabla como antes, solo para M y con prop
-hombres_por_dosis <- data_reg %>% 
-  group_by(id_persona) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+hombres_por_dosis <- data_per %>% 
   filter(sexo == "M") %>% 
   group_by(orden_dosis) %>% 
   summarise(M_pob = n()) %>% 
   mutate(M_nrel = M_pob/sum(M_pob) * 100,
          Freq_rel_acum_M = (cumsum(M_pob) / sum(M_pob) * 100)) %>% 
   arrange((orden_dosis))
-print(hombres_por_dosis)
-
+  
 # Armar una tabla como antes, solo para F y con prop
-mujeres_por_dosis <- data_reg %>% 
-  group_by(id_persona) %>% 
-  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+mujeres_por_dosis <- data_per %>% 
   filter(sexo == "F") %>% 
   group_by(orden_dosis) %>%
   summarise(F_pob = n()) %>%
   mutate(F_nrel = F_pob/sum(F_pob) * 100,
          Freq_rel_acum_F = (cumsum(F_pob) / sum(F_pob) * 100)) %>% 
   arrange((orden_dosis)) 
-print(mujeres_por_dosis)
-
-mujeres_por_dosis %>% 
-  ggplot(aes(orden_dosis, Freq_rel_acum_F)) + geom_col()
 
 # Full outer join: combinacion externa es cuando algun codigo identificador no esta disponible en la otra base. 
 # En este caso debe agregarse el parametro all = TRUE para que aquellos sin coincidencia en el merge no se eliminen.

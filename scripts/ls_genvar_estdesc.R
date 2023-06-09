@@ -1,10 +1,12 @@
 
+# Obtengo algunos df sobre las cantidades y participación de la población objetivo de la vacunación desde diferentes perspectivas como son el `sexo`, `grupo_etario`, `condicion_aplicacion` y otras. Las observaciones anteriores de personas son filtradas por la variable `fecha_aplicacion` para conservar en análisis unicamente un registro, el mas actualizado por sujeto.
+
 # Creo listas donde guardar tablas y "metadata"
 ls_genvar_estdesc <- list()
 ls_genvar_texto <- list()
 varstat <- "dosis"
 #fecha_limite <- "2022-12-30"
-#filter(fecha_aplicacion <= fecha_limite)
+#filter(fecha_aplicacion <= fecha_limite) 
 
 # Realizar el procesamiento para cada variable (se llama variables dinamica a la iterada)
 for (var in varlist) {
