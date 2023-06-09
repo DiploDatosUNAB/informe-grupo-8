@@ -74,90 +74,43 @@ Esta sección contiene una breve descripcion de los datos cargados.
   * Rango y magnitud de la base
 
 * Descripcion de variables de interés
+  * Nombre y tipo de variables
   * Dominio de las variables (valores únicos)
   
 :::
 
 ## Estructura de los datos
 
-###  Intervalo de fechas del registro (primero y último del recorte)
-Quiero saber entre que fechas dispongo de informacion de registros de vacunación.
-```{r fechas_intervalo_no_funca_formatos}
-fecha_0 <- summarise(data_reg, min(fecha_aplicacion))
-fecha_T <- summarise(data_reg, max(fecha_aplicacion))
+*  Intervalo de fechas del registro (primero y último de la muestra aleatoria):
 
-print(paste0("la primer fecha disponible es del ", fecha_0, " y la ultima fecha de actualizacion es del ", fecha_T))
+La primer observacion se registró el: **`r min(data_reg$fecha_aplicacion)`** 
 
-rm(fecha_0, fecha_T)
+y la última se registró el: **`r max(data_reg$fecha_aplicacion)`**.
+
+* Rango y magnitud de la base (cantidad de observaciones y variables)
+
+Se presentan las dimensiones de la base `data_per` y `data_reg`:
+
+  * Cantidad de filas_observaciones (individuos) consideradas en `data_per` (n) es de: `r nrow(data_per)`.
+  
+  * Cantidad de filas_observaciones (registros) considerados en `data_reg` (n) es de: `r nrow(data_reg)`.
+
+  * Cantidad de columnas_variables (m) en ambas bases es: `r mean(ncol(data_reg), ncol(data_per))`.
+
+  * Dimensiones `data_per`, n | m: `r dim(data_per)`, un dataframe de <<cantidad de celdas>> `r nrow(data_per)*ncol(data_per)`.
+  
+  * Dimensiones `data_reg`, n | m: `r dim(data_reg)`, un dataframe de <<cantidad de celdas>> `r nrow(data_reg)*ncol(data_reg)`. 
+
+## Descripción de variables
+
+* Los nombres de las variables son las siguientes: `r colnames(data_per)`
+
+* El tipo de variables se describe a continuación mediante a la segmentación de columnas por `character`, `numeric`, `Date`.
+
+* Adicionalmente el rango, es decir, el dominio de la variable se presenta para las variables `character` solamente para algunas.
+```{r data_names_summary_levels}
+source("scripts/data_names_summary_levels.R")
 ```
-La primer observacion se registró el **`r summarise(data_reg, min(fecha_aplicacion))`** y la última se registró el **`r summarise(data_reg, max(fecha_aplicacion))`**.
-
-#### Rango y magnitud de la base (cantidad de observaciones y variables)
-Se presentan las dimensiones de la base que sirve de registros.
-```{r rango_datos}
-obs_filas <- nrow(data_reg) # cantidad de observaciones (filas)
-obs_cols <- ncol(data_reg) # cantidad de variables (columnas)
-obs_valores = obs_filas * obs_cols # cantidad de datos (celdas)
-# dim(data_reg)
-
-print(paste0("Los datos se estructuran en : ", obs_filas, " observaciones (filas) y ", obs_cols, " variables (columnas). Tenemos un total de ", obs_valores, " valores o celdas con datos."))
-
-#Los datos se estructuran en **`r obs_filas`** observaciones (filas) y **`r obs_cols`** variables (columnas). Tenemos un total de **`r obs_valores`** valores o celdas con datos.
-
-rm(obs_filas, obs_cols, obs_valores)
-```
-
-Cantidad de filas_observaciones (n): `r nrow(data_reg)`
-
-Cantidad de columnas_variables (m): `r ncol(data_reg)`
-
-Dimensiones, n | m: `r dim(data_reg)`
-
-Cantidad de celdas_valores (nxm): `r nrow(data_reg)*ncol(data_reg)`
-
-### Descripción de variables de interés
-Presentacion de las variables, a título informativo estos son los nombres. A continuación se seleccionan algunas variables para brindar mayores detalles de las mismas.
-```{r colnames}
-
-colnames(data_per)
-
-# vector logico que itera en las columnas de mi data frame.
-columnas_ch <- sapply(data_per, is.character)
-
-# utilizo el vector logico para traer un nuevo vector con los nombres que dan TRUE en el anterior
-columnas_ch <- names(data_per)[columnas_ch]
-
-varlist_ch <- columnas_ch[-c(4, 5, 6, 8, 9, 10, 14)] 
-varlist_ch <- matrix(varlist_ch, ncol = 1)
-
-columnas_ch <- matrix(columnas_ch, ncol = 1)
-
-
-```
-Estas son todas las variables disponibles.
-
-#### Dominio de las variables (valores únicos)
-Se presentan a continuación los valores posibles que registran algunas de las variables, algo a lo que también haremos referencia como su dominio.
-```{r summary_data_levels_factor, eval=TRUE, echo=TRUE, include=TRUE, paged.print=TRUE}
-
-#varlist <- c("sexo","grupo_etario","condicion_aplicacion","vacuna", "nombre_dosis_generica", "orden_dosis")
-
-for (vardin in varlist_ch){
-  var_output <- data_reg[[vardin]]
-  cat("\n")
-  print(paste0("Niveles de la variable:", ""))
-  print(levels(factor(var_output)))
-  cat("\n")
-  #distinct(data, var_output)
-}
-
-#summary(data) # comento summary porque al no tratarse de una base muy numerica no me sirve de mucho este resumen.
-
-# rm(fecha_0, fecha_T, obs_cols, obs_filas, obs_valores, file_path)
-# rm(var_output, varlist, vardin)
-
-```
-Breve descripción del tipo de datos disponibles en NOMIVAC. La gran mayoría son character, excepcion de fecha y orden dosis, así como  variables id_codigos asociadas a otras descripcion_codigos.
 
 # Manipulacion de datos.
 
