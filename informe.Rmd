@@ -9,7 +9,6 @@ output:
     collapsed: true
     number_sections: true
     code_download: true
-    css: hoja_estilo_tpfinal.css
     code_folding: hide 
 ---
 
@@ -34,9 +33,6 @@ library(lubridate)
 
 ```
 
-# NOTAS
-1. Mas colores http://sape.inf.usi.ch/quick-reference/ggplot2/colour
-
 # Introducción al uso de datos de la base NOMIVAC.
 
 ## Importar datos -> Muestra
@@ -44,30 +40,31 @@ Se importan los datos en un dataframe de nombre `data`. Se limita la cantidad m�
 ```{r importa_muestra, echo=TRUE, message = FALSE}
 rm(list = ls())
 # Defino mi muestra de registros
-mi_muestra_registros <- 100000
+mi_muestra_registros <- 2000
 source("scripts/importar-datos.R")
 ```
 ## Limpieza de observaciones duplicadas
 Se conservan registros unicamente de personas que para su ultima fecha de vacunacion presentan un unico registro. Es decir, si la persona en su ultima vacunacion aparece en mas de una fila se elimina. Para más detalles, consultar el script a continuacion. Se almacenan 2 data sets:
+
 1. data 1 persona: 1 fila, el último registro `data_per`. Esta representa una *"foto"* estática o estado de situación de vacunación del individuo hasta un momento dado.
+
 1. data 1 persona: 1 =< filas (registros de vacunación) `data_reg`.
-```{r}
+```{r data_filter_duplicados}
 source("scripts/data_filter_duplicados.R")
 ```
 
 ## Seleccion del sample
 Se realiza un **sample** de la muestra de datos importada y filtrada al environment para reducir el tiempo computacional del procesamiento del informe. `mi_sample_registros`
-```{r muestra_sample}
+```{r data_sample, message=FALSE, warning=FALSE}
 # Defino mi sample registros
-mi_sample_registros <- 10000
+mi_sample_registros <- 1000
 source("scripts/data_sample.R")
 ```
 
 # Exploración de los datos
-
 :::{.alert .alert-info}
 
-Esta sección contiene una breve descripcion de los datos cargados.
+Esta sección contiene una breve descripción de los datos cargados.
 
 * Estructura de los datos
   * Intervalo de fechas del registro
@@ -91,15 +88,15 @@ y la última se registró el: **`r max(data_reg$fecha_aplicacion)`**.
 
 Se presentan las dimensiones de la base `data_per` y `data_reg`:
 
-  * Cantidad de filas_observaciones (individuos) consideradas en `data_per` (n) es de: `r nrow(data_per)`.
+  * Cantidad de filas u observaciones (individuos) consideradas en `data_per` (n) es de: `r nrow(data_per)`.
   
-  * Cantidad de filas_observaciones (registros) considerados en `data_reg` (n) es de: `r nrow(data_reg)`.
+  * Cantidad de filas u observaciones (registros) consideradas en `data_reg` (n) es de: `r nrow(data_reg)`.
 
   * Cantidad de columnas_variables (m) en ambas bases es: `r mean(ncol(data_reg), ncol(data_per))`.
 
-  * Dimensiones `data_per`, n | m: `r dim(data_per)`, un dataframe de <<cantidad de celdas>> `r nrow(data_per)*ncol(data_per)`.
+  * Dimensiones `data_per`, n | m: `r dim(data_per)`, un dataframe de "cantidad de celdas" `r nrow(data_per)*ncol(data_per)`.
   
-  * Dimensiones `data_reg`, n | m: `r dim(data_reg)`, un dataframe de <<cantidad de celdas>> `r nrow(data_reg)*ncol(data_reg)`. 
+  * Dimensiones `data_reg`, n | m: `r dim(data_reg)`, un dataframe de "cantidad de celdas" `r nrow(data_reg)*ncol(data_reg)`. 
 
 ## Descripción de variables
 
@@ -111,8 +108,36 @@ Se presentan las dimensiones de la base `data_per` y `data_reg`:
 ```{r data_names_summary_levels}
 source("scripts/data_names_summary_levels.R")
 ```
+```{r keep_order}
+rm(columnas_ch, varlist_ch, columnas_date, varlist_date, columnas_num, varlist_num)
+```
+
 
 # Manipulacion de datos.
+:::{.alert .alert-info}
+Esta sección sirve para compartimentar la edición y generación de nuevos objetos dentro del enviroment.
+
+* Se agregan variables temporales con uso de lubridate para extender las bases.
+
+* Se renombran variables, corrigen valores y reagrupan para una mejor utilización de las mismas.
+
+* Se crean nuevos objetos para utilizacion en tablas y gráficos exploratorios de variables de interés. En particular las listas:
+ 
+  * `ls_genvar_estdesc` una lista que contiene agrupaciones por variable generica de interes (chars) y expresa para esos grupos las siguientes columnas: 
+    * Agrupamiento segun `variable de interes` (char) `ls_genvar_estdesc[["var"]][1]`.
+    * Valores mínimos, medios y máximos de `orden_dosis` (cantidad de dosis) `ls_genvar_estdesc[["var"]][2:4]`.
+    * Cantidad de registros acumulados por grupo (N_i * mean_i) `ls_genvar_estdesc[["var"]][5]`.
+    * Población (N_i): cantidad de miembros que componen el grupo `ls_genvar_estdesc[["var"]][6]`.
+    * Población relativa (N_rel): participación del grupo sobre el total de individuos.`ls_genvar_estdesc[["var"]][7]`.
+  
+  * `ls_genvar_texto` una lista que contiene el nombre de cada grupo de cada variable generica de interes (chars) que expresa el grupo mas aplicado en cantidad de dosis:
+    * Agrupamiento segun `variable de interes` (char)
+    * Grupo con mayor cantidad *absoluta* de dosis recibidas `ls_genvar_texto[["var"]][1]`.
+    * Grupo con mayor cantidad *promedio* de dosis recibidas `ls_genvar_texto[["var"]][2]`.
+
+  * `ls_timvar_sumdosis` una lista que contiene para cada agregación de unidad temporal una tabla de resumen con la cantidad de personas vacunadas y proporción sobre el total.
+  
+:::
 
 ## Agregacion de variables temporales.
 Se hace uso de lubridate para sobreescribir las bases de datos de registros y de personas con variables que identifican unidades temporales diferentes.
@@ -123,53 +148,38 @@ source("scripts/data_mutate_lubridate.R")
 ## Adecuación de valores (edición, agrupación y homogeneización)
 En el siguiente archivo `scripts/normalizacion-variables-valores.R` se renombran variables, se remplazan valores de variables y se agrupan valores.
 ```{r normalizacion_valores, eval=TRUE, echo=FALSE, include=TRUE, paged.print=FALSE}
-source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = TRUE)
+source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = FALSE)
 ```
 
-## Generación de objetos de environment
+## Generación de objetos del environment
+
+* Se crea la lista de elementos `ls_genvar_estdesc` y `ls_genvar_texto`.
 ```{r ls_genvar_estdesc, echo = TRUE, warning=FALSE, include=TRUE}
 # Seleccion de variables para armado de tablas de estadisticos descriptivos:
-varlist <- c("sexo", "grupo_etario", "condicion_aplicacion",
-             "vacuna", "nombre_dosis_generica", "lote_vacuna", 
-             "jurisdiccion_aplicacion", "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
+varlist <- c("sexo", "grupo_etario", "condicion_aplicacion", "vacuna", 
+             "nombre_dosis_generica", "lote_vacuna", "jurisdiccion_aplicacion", 
+             "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
 source("scripts/ls_genvar_estdesc.R")
 ```
-:::{.alert .alert-info}
-Esta sección sirve para compartimentar la generacion de nuevos objetos dentro del enviroment.
 
-Se crean objetos para utilizacion en tablas y gráficos exploratorios de variables de interés
-
-* Se generan listas:
-  * `ls_genvar_estdesc` una lista que contiene agrupaciones por variable generica de interes (chars) y expresa para esos grupos las siguientes columnas: 
-    * Agrupamiento segun `variable de interes` (char) `ls_genvar_estdesc[["var"]][1]`.
-    * Valores mínimos, medios y máximos de `orden_dosis` (cantidad de dosis) `ls_genvar_estdesc[["var"]][2:4]`.
-    * Cantidad de registros acumulados por grupo (N_i * mean_i) `ls_genvar_estdesc[["var"]][5]`.
-    * Población (N_i): cantidad de miembros que componen el grupo `ls_genvar_estdesc[["var"]][6]`.
-    * Población relativa (N_rel): participación del grupo sobre el total de individuos.`ls_genvar_estdesc[["var"]][7]`.
-  * `ls_genvar_texto` una lista que contiene el nombre de cada grupo de cada variable generica de interes (chars) que expresa el grupo mas aplicado en cantidad de dosis:
-    * Agrupamiento segun `variable de interes` (char)
-    * Grupo con mayor cantidad *absoluta* de dosis recibidas `ls_genvar_texto[["var"]][1]`.
-    * Grupo con mayor cantidad *promedio* de dosis recibidas `ls_genvar_texto[["var"]][2]`.
-
-:::
-
+* Se crea el dataframe de `aplicaciones_diarias`.
 ```{r df_aplicaciones_diarias}
 source("scripts/df_aplicaciones_diarias.R")
 ```
 
-```{r ls_timvar_sumdosis_loop}
+* Se crea la lista de elementos `ls_timvar_sumdosis`
+```{r ls_timvar_sumdosis}
 source("scripts/ls_timvar_sumdosis.R")
 ```
 
-
-# Variables de Interes: Tablas y gráficos 
+# Variables Estáticas: Tablas y gráficos 
 :::{.alert .alert-info}
 
 Esta sección contiene visualizaciones tabulares y gráficas estandarizadas y **estáticas** para variables de interés. 
 
 Todos los resultados que se presentan en esta seccion hacen referencia a una *foto* en el tiempo. 
 
-Es decir, las tablas y gráficos corresponden a un estado de situación en un momento determinado.
+Es decir, las tablas y gráficos corresponden a un *estado de situación* en un momento determinado.
 
 Mas adelante, en la próxima sección, se realizan análisis **dinámicos** de la evolución temporal de los datos y estadísticas afínes.
 
@@ -179,66 +189,40 @@ Mas adelante, en la próxima sección, se realizan análisis **dinámicos** de l
   * Agrupamiento por variable de interés `vardin`
   * Valores mínimos, medios y máximos de `varstat`
   * Población (n_abs): cantidad de miembros que componen el grupo (`vardin`)
-  * Cantidad de registros disponibles acumulados por grupo (mean_i * N_i) 
+  * Cantidad de registros acumulados por grupo (mean_i * N_i) 
   * Población relativa (n_rel): participación del grupo sobre el total de observaciones.
   
-* Gráficos 
+* Gráficos que pueden incluir 
   * Barras
   * Líneas
   * Puntos
   * Boxplots
-  
+
 :::
 
-
-```{r obtener_mas_abs_mas_rel, include=FALSE}
-#varias formas de jugar con listas:
-ls_genvar_texto[["sexo"]]["sexo"] ## abs
-ls_genvar_texto[["sexo"]]["sexo.1"] ## rel
-ls_genvar_estdesc[["sexo"]]["mean_dosis"][,1]
-ls_genvar_estdesc[["sexo"]]$mean_dosis[c(1,3)]
-min(ls_genvar_estdesc[["sexo"]]["mean_dosis"])
-max(ls_genvar_estdesc[["sexo"]]["mean_dosis"])
-
-```
-
-```{r grafico_estandar_function}
-print("la funcion de graficar no funciona")
-print("grafico_estandar(ls_genvar_estdesc$condicion_aplicacion, condicion_aplicacion, total_dosis)")
-```
-### CHILD SUPPORT PLEASE
-https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
-```{r hijitus, eval=FALSE, include=FALSE, results='asis'}
-res <- knitr::knit_child("scripts/variable_resume_estdesc_texto_graph.Rmd", quiet = TRUE)
-cat(res, sep = '\n')
-
-print("mi informe consta de varios pasos que si se me permite me gustaria dejar todo metido en un script, o tambien dejarlos en rmd y llamarlos mediante child. Algo lei en bookdown pero no llegue a tener exito con la prueba.")
-```
-
-
-
-### Variable `sexo`
+## Variable `sexo`
 ```{r sexo_general, include=TRUE}
 
 ls_genvar_estdesc$sexo %>% 
-  knitr::kable(caption = "Variable Sexo: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
-               col.names = c("Grupo", 
-                             "Dosis mínima", 
-                             "Dosis promedio", 
-                             "Dosis máxima", 
-                             "Dosis totales", 
-                             "Población", 
-                             "Participación"))
+  knitr::kable(caption = "Variable Sexo - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
+                      "Dosis minima", 
+                      "Dosis promedio", 
+                      "Dosis maxima", 
+                      "Dosis totales", 
+                      "Poblacion", 
+                      "Participacion"))
 
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["sexo"]]["sexo"]` con `r max(ls_genvar_estdesc[["sexo"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["sexo"]]["sexo"]` con `r scales::comma(max(ls_genvar_estdesc[["sexo"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
 1. La población que mas rebició vacunas en valor ralativo es: `r ls_genvar_texto[["sexo"]]["sexo.1"]` con `r round(max(ls_genvar_estdesc[["sexo"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
-```{r sexo_grafico_estandar, fig.show='hold', out.width = "50%"}
+```{r gh_est_sexo, fig.show='hold', message=FALSE, out.width="50%"}
 
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, total_dosis)) +
   geom_col(fill="chocolate") +
+  theme_classic() +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
@@ -246,39 +230,34 @@ ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
 ls_genvar_estdesc$sexo %>% 
   ggplot(mapping = aes(sexo, mean_dosis)) +
   geom_col(fill="steelblue") +
+  theme_classic() +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","sexo", "_","mean_dosis", ".png"))
 ```
-.
-.
-.
-.
-.
- 
 
-### Variable `grupo_etario`
+## Variable `grupo_etario`
 ```{r grupo_etario_general, include=TRUE}
 
 ls_genvar_estdesc$grupo_etario %>% 
-  knitr::kable(caption = "Variable Grupo_etario: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
-               col.names = c("Grupo", 
-                             "Dosis mínima", 
-                             "Dosis promedio", 
-                             "Dosis máxima", 
-                             "Dosis totales", 
-                             "Población", 
-                             "Participación"))
+  knitr::kable(caption = "Variable Grupo_etario - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
+                      "Dosis minima", 
+                      "Dosis promedio", 
+                      "Dosis maxima", 
+                      "Dosis totales", 
+                      "Poblacion", 
+                      "Participacion"))
 
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario"]` con `r max(ls_genvar_estdesc[["grupo_etario"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario"]` con `r scales::comma(max(ls_genvar_estdesc[["grupo_etario"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
 1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario.1"]` con `r round(max(ls_genvar_estdesc[["grupo_etario"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
-```{r grupo_etario_grafico_estandar, fig.show='hold', out.width = "50%"}
+```{r gh_est_grupo_etario, fig.show='hold', message=FALSE, out.width="50%"}
 
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, total_dosis)) +
   geom_col(fill="chocolate") +
+  theme_classic() +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
@@ -286,39 +265,34 @@ ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png")
 ls_genvar_estdesc$grupo_etario %>% 
   ggplot(mapping = aes(grupo_etario, mean_dosis)) +
   geom_col(fill="steelblue") +
+  theme_classic() +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","mean_dosis", ".png"))
 ```
-.
-.
-.
-.
-.
 
-
-### Variable `condicion_aplicacion`
+## Variable `condicion_aplicacion`
 ```{r condicion_aplicacion_general, include=TRUE}
 
 ls_genvar_estdesc$condicion_aplicacion %>% 
-  knitr::kable(caption = "Variable Condicion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
-               col.names = c("Grupo", 
-                             "Dosis mínima", 
-                             "Dosis promedio", 
-                             "Dosis máxima", 
-                             "Dosis totales", 
-                             "Población", 
-                             "Participación"))
+  knitr::kable(caption = "Variable Condicion_aplicacion - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
+                      "Dosis minima", 
+                      "Dosis promedio", 
+                      "Dosis maxima", 
+                      "Dosis totales", 
+                      "Poblacion", 
+                      "Participacion"))
 
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion"]` con `r max(ls_genvar_estdesc[["condicion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion"]` con `r scales::comma(max(ls_genvar_estdesc[["condicion_aplicacion"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
 1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["condicion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
-```{r condicion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+```{r gh_est_cond_aplic, fig.show='hold', message=FALSE, out.width="50%"}
 
 ls_genvar_estdesc$condicion_aplicacion %>% 
   ggplot(mapping = aes(condicion_aplicacion, total_dosis)) +
   geom_col(fill="chocolate") +
+  theme_classic() +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
@@ -326,39 +300,34 @@ ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis",
 ls_genvar_estdesc$condicion_aplicacion %>% 
   ggplot(mapping = aes(condicion_aplicacion, mean_dosis)) +
   geom_col(fill="steelblue") +
+  theme_classic() +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
 ```
-.
-.
-.
-.
-.
 
-
-### Variable `jurisdiccion_aplicacion`
+## Variable `jurisdiccion_aplicacion`
 ```{r jurisdiccion_aplicacion_general, include=TRUE}
 
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
-  knitr::kable(caption = "Variable Jurisdiccion_aplicacion: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
-               col.names = c("Grupo", 
-                             "Dosis mínima", 
-                             "Dosis promedio", 
-                             "Dosis máxima", 
-                             "Dosis totales", 
-                             "Población", 
-                             "Participación"))
+  knitr::kable(caption = "Variable Jurisdiccion_aplicacion - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
+                      "Dosis minima", 
+                      "Dosis promedio", 
+                      "Dosis maxima", 
+                      "Dosis totales", 
+                      "Poblacion", 
+                      "Participacion"))
 
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion"]` con `r max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion"]` con `r scales::comma(max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
 1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
-```{r jurisdiccion_aplicacion_grafico_estandar, fig.show='hold', out.width = "50%"}
+```{r gh_est_jur_aplic, fig.show='hold', message=FALSE, out.width="50%"}
 
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
   ggplot(mapping = aes(jurisdiccion_aplicacion, total_dosis)) +
   geom_col(fill="chocolate") +
+  theme_classic() +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
@@ -366,39 +335,34 @@ ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosi
 ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
   ggplot(mapping = aes(jurisdiccion_aplicacion, mean_dosis)) +
   geom_col(fill="steelblue") +
+  theme_classic() +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","mean_dosis", ".png"))
 ```
-.
-.
-.
-.
-.
 
-
-### Variable `vacuna`
+## Variable `vacuna`
 ```{r vacuna_general, include=TRUE}
 
 ls_genvar_estdesc$vacuna %>% 
-  knitr::kable(caption = "Variable Vacuna: Estadísticas descriptivas sobre dosis aplicadas al grupo", 
-               col.names = c("Grupo", 
-                             "Dosis mínima", 
-                             "Dosis promedio", 
-                             "Dosis máxima", 
-                             "Dosis totales", 
-                             "Población", 
-                             "Participación"))
+  knitr::kable(caption = "Variable Vacuna - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
+                      "Dosis minima", 
+                      "Dosis promedio", 
+                      "Dosis maxima", 
+                      "Dosis totales", 
+                      "Poblacion", 
+                      "Participacion"))
 
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["vacuna"]]["vacuna"]` con `r max(ls_genvar_estdesc[["vacuna"]]["total_dosis"])` dosis aplicadas sobre este grupo.
+1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["vacuna"]]["vacuna"]` con `r scales::comma(max(ls_genvar_estdesc[["vacuna"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
 1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["vacuna"]]["vacuna.1"]` con `r round(max(ls_genvar_estdesc[["vacuna"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
 
-```{r vacuna_grafico_estandar, fig.show='hold', out.width = "50%"}
+```{r gh_est_vacuna, fig.show='hold', message=FALSE, out.width="50%"}
 
 ls_genvar_estdesc$vacuna %>% 
   ggplot(mapping = aes(vacuna, total_dosis)) +
   geom_col(fill="chocolate") +
+  theme_classic() +
   labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
@@ -406,122 +370,104 @@ ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
 ls_genvar_estdesc$vacuna %>% 
   ggplot(mapping = aes(vacuna, mean_dosis)) +
   geom_col(fill="steelblue") +
+  theme_classic() +
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","vacuna", "_","mean_dosis", ".png"))
 ```
-.
-.
-.
-.
-.
 
-### Variables `max(fecha_aplicacion)` y `orden_dosis`
-```{r vacunas_orden_dosis_general}
-varlist <- c("orden_dosis", "fecha_aplicacion")
-for (esta_variable in varlist) {
-  desctabla <- data_per %>% group_by(.data[[esta_variable]]) %>% summarise(n = n()) %>% mutate(prop = n / sum(n)*100)  
-  print(desctabla) %>% 
-    knitr::kable(caption = "Agrupamiento, Registros y Participación")
-  
-# almacenar en lista
-ls_genvar_estdesc[[esta_variable]] <- desctabla
-
-mas_abs <- desctabla %>% 
-  filter(prop == max(prop)) %>% 
-  select(.data[[esta_variable]])
-
-textabla <- data.frame(abs = mas_abs)
-
-# almacenar en lista
-ls_genvar_texto[[esta_variable]] <- textabla
-
-}
-
-rm("desctabla", "textabla")
+## Variable `fecha_aplicacion`
+Fechas en qué más dosis fueron aplicadas.
+```{r fecha_aplicacion_general}
+ls_genvar_estdesc$fecha_aplicacion %>% arrange(desc(prop)) %>% head(5) %>% 
+  knitr::kable(caption = "Agrupamiento, Registros y Participacion", col.names = c("Fecha de aplicacion", "Cantidad de dosis", "Peso sobre el total"))
 ```
+La cantidad maxima de dosis aplicadas, **`r scales::comma(max(ls_genvar_estdesc[["fecha_aplicacion"]]["n"]))`)** en tan solo un día, fué el: **`r ls_genvar_texto[["fecha_aplicacion"]]["fecha_aplicacion"]`**.
+
+## Variable `orden_dosis`
+Cantidad de personas por cantidad de dosis aplicadas.
+```{r orden_dosis_general}
+ls_genvar_estdesc$fecha_aplicacion %>% arrange(desc(prop)) %>% head(5) %>% 
+  knitr::kable(caption = "Agrupamiento, Registros y Participacion", col.names = c("Fecha de aplicacion", "Cantidad de dosis", "Peso sobre el total"))
+```
+El *modo o moda* de dosis aplicadas a cada individuo es de **`r ls_genvar_texto[["orden_dosis"]]["orden_dosis"]`** dosis, y esta cantidad fué aplicada a una población de **`r max(ls_genvar_estdesc[["orden_dosis"]]["n"])`**.
+
 Se observan las frecuencias de las veces que las personas fueron vacunadas segun cantidad de dosis, y en la otra tabla se obtiene la cantidad de dosis aplicadas por fecha, para las últimas aplicaciones dadas a cada persona. 
 
-La cantidad de dosis final mas observada es de `r max(ls_genvar_texto[["orden_dosis"]])` dosis.
-La fecha en que hubo mas aplicaciones de personas que no volvieron a aplicarse mas adelante nuevas dosis es 
+```{r gh_est_fecha-apli_y_ord-dosis, fig.show='hold', out.width = "50%"}
+ls_genvar_estdesc$fecha_aplicacion %>% 
+  ggplot(mapping = aes(fecha_aplicacion, n)) +
+  geom_col(fill="chocolate") +
+  theme_classic() +
+  labs(title = "Cantidad de dosis totales aplicadas cada dia")
 
-```{r limpiar_enviroment}
-ls_genvar_texto[["fecha_aplicacion"]][1,1]
-ls_genvar_texto[["fecha_aplicacion"]]
-ls_genvar_texto[["orden_dosis"]][1,1]
-ls_genvar_texto[["orden_dosis"]]
-rm(mas_abs, mas_rel)
+ls_genvar_estdesc$orden_dosis %>% 
+  ggplot(mapping = aes(orden_dosis, n)) +
+  geom_col(fill="steelblue") +
+  theme_classic() +
+  labs(title = "Cantidad de individuos segun cantidad de dosis aplicadas")
+
+
 ```
-# Caracterizacion de la poblacion
-piramide problacional
 
-```{r piramide_poblacional}
+## Caracterizacion de la poblacion
+Piramide problacional por `sexo` y `grupo_etario`.
+```{r piramide_poblacional, message=FALSE}
 
-# piramide poblacional por sexo y grupo_etario
-datos_piramide <- data_reg %>% 
-  group_by(sexo, grupo_etario) %>% 
-  summarise(n = n()) %>% 
-  subset(sexo != "S.I.") # quito uno de los valores de sexo.
-  
-# invierto el signo de poblacion para los masculinos
-datos_piramide$n <- ifelse(datos_piramide$sexo == "M", -datos_piramide$n, datos_piramide$n)
+source("scripts/df_piramide_poblacional.R")
 
-# grafico piramide
-datos_piramide %>% 
-  ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
-  geom_col() +
-  labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>")
-
-# mejorar el resultado
-n_range <- range(datos_piramide$n)
-
-# valores de x sin negativos
-intervalo <- round(max(abs(n_range[1]), abs(n_range[2])) / 10, 0)
-n_range_seq <- seq(n_range[1], n_range[2], by = intervalo)
-
-# pretty nos ayuda a armar valores de referencia redondeados
-pop_range_breaks <- pretty(n_range, n = 7)
-
-datos_piramide %>% 
+# Gran grafico piramide poblacional de Gizha.
+df_piramide_poblacional %>% 
   ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
   geom_col() +
   scale_x_continuous(breaks = pop_range_breaks,
-                     labels = scales::comma(abs(pop_range_breaks))) + ## ver que le vuelvo a meter ABS. 
+                     labels = scales::comma(abs(pop_range_breaks))) +
   labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>") +
-  xlab(label = "Población") +
+  xlab(label = "Poblacion") +
   ylab(label = "Grupo etario") +
   theme(legend.position = "right") + ## ubicar la leyenda
   theme_classic() ## 
 ggsave(paste0("png/piramide_poblacional_","sexo_grupo_etario", ".png"))
 
-# ?text ## para agregar valores, no me funciono
-
 ```
 Gracias Elio por el material: 
-Me hubiera gustado y queda pendiente terminar la biblio generando una funcion como explica en el paso a paso.
+Me hubiera gustado y queda pendiente terminar la biblio generando una funcion como explica en el paso a paso y centrar el cero en el grafico con igual espacio a cada lado.
 https://www.njtierney.com/post/2022/08/09/ggplot-pyramid/
 
-# Análisis mas detallados
+# Variables Dinámicas
 
-## Análisis dinámicos de los datos
 :::{.alert .alert.info}
+
 En esta sección se presentan análisis dinámicos de la evolución de los datos y estadísticas en un intervalo temporal.
 
-* Aplicaciones diarias para todo el territorio 
-* Días populares para vacunarse 
-* Días de descanso entre dosis (tiempo promedio)
+* Aplicaciones por diferentes aproximaciones de unidad temporal y por etapas del plan de vacunación.
+* Días populares para vacunarse. `ls_timvar_sumdosis[["dia"]]`.
+* Días de descanso entre dosis (tiempo promedio). *Pendiente*
 
 :::
 
-### Aplicaciones diarias para todo el territorio 
+```{r}
+x_range_mes <- seq(1:12)
+x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+```
 
-#Cantidad de dosis que se aplicaron cada día.
+## Dosis x día de la semana
+```{r gh_ls_timvar_dia, message=FALSE}
+## Grafico dosis x dia
+ls_timvar_sumdosis[["dia"]] %>% 
+  ggplot(aes(x = dia, y = suma_dosis)) +
+  geom_col(fill = "lightcoral") +
+  labs(title = "Dosis aplicadas para cada día") +
+  xlab(label = "Días") +
+  ylab(label = "Dosis") +
+  theme(legend.position = "right") + ## ubicar la leyenda
+  theme_classic() ## 
+ggsave(paste0("png/ls_timvar_","dia", ".png"))
+```
 
-
-
-```{r gh_ls_timvar_aplicaciones_diarias}
-
-# Luego de explorar posibles graficos, me resulta interesante que se vea el año que mas peso tiene en las vacunaciones, y partir de lo general a lo particular, de lo macro a lo micro. Vamos a hacer zoom en cada periodo temporal y explicar como parece que se comporta la campaña de vacunacion y la poblacion.
+## Dosis x año
+```{r gh_ls_timvar_anio, message=FALSE}
+# Luego de explorar posibles graficos, me resulta interesante que se vea el año que mas peso tiene en las vacunaciones, y partir de lo general ir a lo particular, de lo macro a lo micro. Vamos a hacer zoom en cada periodo temporal y explicar como parece que se comporta la campaña de vacunacion y la poblacion.
 
 ## Grafico dosis x anio
 ls_timvar_sumdosis[["anio"]] %>% 
@@ -535,43 +481,13 @@ ls_timvar_sumdosis[["anio"]] %>%
 ggsave(paste0("png/ls_timvar_","anio", ".png"))
 ## Es enorme la diferencia entre la vacunacion del anio con mas peso, el 2022, comparado con los otros 2 años disponibles.
 ls_timvar_sumdosis[["anio"]]
+```
 
-## Grafico dosis x dia
-ls_timvar_sumdosis[["dia"]] %>% 
-  ggplot(aes(x = dia, y = suma_dosis)) +
-  geom_col(fill = "lightcoral") +
-  labs(title = "Dosis aplicadas para cada día") +
-  xlab(label = "Días") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","dia", ".png"))
-
+## Dosis x mes del año con mas vacunación
+```{r gh_ls_timvar_meses_2022, message=FALSE}
 # Nos adentramos entonces en el anio con mayor vacunacion para ver como se ejecuto a lo largo de los meses.
 
 ## Grafico dosis x mes del año 2022, fill = día
-x_range <- seq(1:12)
-x_range_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
-aplicaciones_diarias %>%
-  filter(anio == 2022) %>% 
-  group_by(mes, dia) %>% 
-  summarise(suma_dosis = sum(dosis)) %>% 
-  mutate(participacion = suma_dosis / sum(suma_dosis) * 100) %>% 
-  ggplot(aes(x = mes, y = suma_dosis, fill = dia)) +
-  geom_col() +
-  scale_x_continuous(breaks = x_range, 
-                     labels = x_range_lab) +
-  labs(title = "Dosis aplicadas para cada mes del 2022") +
-  xlab(label = "Mes") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") +
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","meses_2022", ".png"))
-# Se vuelve a observar que los dias de semana son los mas registrados para aplicacion de nuevas dosis. Esta observación ya estaba presente en el gráfico anterior en que se presentaban las dosis entregadas cada día de la semana para todo el período registrado.
-
-## Grafico dosis x mes del año 2022, fill = día
-x_range_mes <- seq(1:12)
-x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
 aplicaciones_diarias %>%
   filter(anio == 2022) %>% 
   group_by(mes, dia) %>% 
@@ -587,6 +503,12 @@ aplicaciones_diarias %>%
   theme(legend.position = "right") +
   theme_classic() ## 
 ggsave(paste0("png/ls_timvar_","meses_2022", ".png"))
+
+# Se vuelve a observar que los dias de semana son los mas registrados para aplicacion de nuevas dosis. Esta observación ya estaba presente en el gráfico anterior en que se presentaban las dosis entregadas cada día de la semana para todo el período registrado.
+```
+
+## Dosis x cada año_mes
+```{r gh_ls_timvar_anio_mes, message=FALSE, fig.show='hold', out.width = "50%"}
 
 ## Para observar con mayor precision descompongo el grafico anterior en meses de todo el periodo, de esta forma obtengo una mayor granulometria que permite ver comportamiento intermensual.
 # Grafico dosis x anio_mes
@@ -605,27 +527,42 @@ ggsave(paste0("png/ls_timvar_","anio_mes", ".png"))
 ls_timvar_sumdosis[["anio_semana"]] %>% 
   ggplot(aes(x = anio_semana, y = suma_dosis)) +
   geom_col() +
-  labs(title = "Dosis aplicadas para cada mes") +
+  labs(title = "Dosis aplicadas para cada semana") +
   xlab(label = "Mes") +
   ylab(label = "Dosis") +
   theme(legend.position = "right") + ## ubicar la leyenda
   theme_classic() ## 
 ggsave(paste0("png/ls_timvar_","anio_semana", ".png"))
 ```
+Con cada nueva partición de la unidad temporal se puede apreciar con mayor detalle la volatilidad intersemanal, mensual y anual.
 
 
+```{r hp_1_aplic_prioriza, fig.show='hold', message=FALSE, out.width = "30%"}
 
-```{r hipotesis_1_aplicaciones_priorizados, fig.show='hold', out.width = "50%"}
-data_reg_t %>% 
+# 2021
+data_reg %>% 
   filter(anio==2021) %>% 
-  group_by(semana, condicion_aplicacion) %>% 
+  group_by(mes, condicion_aplicacion) %>% 
   summarise(dosis = n()) %>%
-  ggplot(aes( x = semana, y = dosis, fill = condicion_aplicacion)) +
+  ggplot(aes( x = mes, y = dosis, fill = condicion_aplicacion)) +
   geom_col() +
-  theme_classic()
+  theme_classic() +
+  scale_x_continuous(breaks = x_range_mes,
+                     labels = x_range_mes_lab)
 
-## grafico **dosis** aplicadas por mes, anio 2021, fill con condicion_aplicacion
-data_reg_t %>% 
+# 2022
+data_reg %>% 
+  filter(anio == 2022) %>% 
+  group_by(mes, condicion_aplicacion) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
+  geom_col() +
+  theme_classic() +
+  scale_x_continuous(breaks = x_range_mes,
+                     labels = x_range_mes_lab)
+
+# 2023
+data_reg %>% 
   filter(anio == 2023) %>% 
   group_by(mes, condicion_aplicacion) %>% 
   summarise(n = n()) %>% 
@@ -633,172 +570,40 @@ data_reg_t %>%
   geom_col() +
   theme_classic() +
   scale_x_continuous(breaks = x_range_mes,
-                     labels = x_range_lab)
-
-## grafico **personas** aplicadas por mes, anio 2021, fill con condicion_aplicacion
-data_per_t %>% 
-  filter(anio == 2023) %>% 
-  group_by(mes, condicion_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
-  geom_col() +
-  theme_classic() +
-  scale_x_continuous(breaks = x_range_mes,
-                     labels = x_range_lab)
-
+                     labels = x_range_mes_lab)
 
 
 ```
 
-
-:::{.alert .alert-info}
-# Analisis por días de la semana
-Me gustaria saber si existe alguna tendencia en la cantidad de aplicaciones diarias dependiendo el dia de la semana que toca. Por ejemplo fines de semanas vs dias de semana. O bien, en grafico de barras de dom a lun. aplicaciones promedio u otro valor que no dependa de la magnitud por ejemplo día_i/sumatoria(aplicaciones de la semana) la cual te resulta una participacion de dom[0,1].
-1. Debería asociar la fecha con el día.
-1. Generar una sumatoria de aplicaciones de la semana y dividir ese día por la sumatoria de la semana. O bien, promedio historico por día.
-1. Hacer un grafico boxplot para evaluar visualmente las tendencias de min/media/max de aplicaciones para cada día, por ejemplo separando en 3 periodos el total, incio de la pandemia y escases de vacunas, ASPO fuerte con mas vacunacion y flexibilizacion de ASPO o actualidad. No se armar clusters pero podria ser por ahi armar los rangos de tiempo.
-:::
-
-Gráfico de las aplicaciones diarias para todas las fechas disponibles y vacunas aplicadas segun color.
 ```{r lista_suma_dosis_tiempo}
 # Gráficos por cantidad de dosis aplicacion_diaria.
-
-## opcion: ver por condicion_aplicacion
-ggplot(data_reg, mapping = aes(x = fecha_aplicacion, fill = condicion_aplicacion)) + geom_bar(stat = "count")
-## opcion: ver por anios
-ggplot(aplicaciones_diarias, mapping = aes(x = fecha_aplicacion, dosis)) + geom_point(aes(color = as.factor(anio)))
-
-## no funciona este apartado.
-anios <- c(2021, 2022, 2023)
-for (este_anio in anios) {
-aplicaciones_diarias %>% 
-  filter(anio == este_anio) %>% 
-  ggplot(aes(x = fecha_aplicacion, dosis)) + geom_col()
-}
 ```
+
+Conclusiones:
+
 El gráfico permite rápidamente visualizar los períodos de mas alta vacunación. La misma es multicausal, entre las principales explicaciones son la disponibilidad de vacunas y ejecución del plan de inmunizaciones, la confianza de la población, la subida de los casos y colapso del sistema hospitalario.
 
-## Análisis cruzados de variables
+Ademas existen factores culturales o logísticos que tienden a una mayor proporción de individuos destinando días de la semana, levemente mas ponderados los días medios de la misma, para concurrir a los centros de vacunación.
+
+Se puede observar una extraña tendencia en la que durante el 2021 las aplicaciones parecen ser dirigidas a las minorias que las necesitaban por presentar comorbilidades, adultos mayores y personas con factores de riesgos, así también como personal de salud y fuerzas de seguridad. 
+
+Luego en 2022 con gran disponibilidad de dosis se aplica en los primeros meses con prioridad a estos mismos grupos. 
+
+A mediados de 2022 los grupos priorizados empiezan a abandonar la aplicación de nuevas dosis y para 2023 ya no hay adultos mayores que se apliquen nuevas dosis. *al menos con este muestreo aleatorio, que bueno... es bastante reducido*
+
+# Variables cruzadas
+
 :::{.alert .alert.info}
-En esta sección se presentan análisis cruzados entre variables.
 
-* Por jurisdicción: cuantas personas de residencia_i registran aplicaciones_i
-* Por persona: que vacunas recibió
-* Por persona: plataforma terminada y/o + refuerzo
+En esta sección se presentan análisis cruzados entre variables no comprendidos en las anteriores secciones.
 
-:::
-
-## Análisis hipotéticos 
-:::{.alert .alert.info}
-En esta sección se presentan relaciones entre variables con el fin de explorar entre los resultados anteriores cuales se corresponden con algun tipo de explicacion proveniente de fenomenos culturales y sociales.
-
-* Jovenes y la adherencia de los esquemas (estatico)
-* Retomar los dias de la semana
+* Por jurisdicción: cuantas personas de residencia_i registran aplicaciones_i.
+* Por persona: que vacunas recibió.
+* Por persona: plataforma terminada y/o + refuerzo. *pendiente*
 
 :::
 
-### `sexo`
-
-### `grupo_etario`
-
-### `condicion_aplicacion`
-
-### `jurisdiccion_aplicacion`
-
-## Creo nuevas variables que me sirvan para operar con la fecha
-
-```{r dosis_personas_sexos}
-
-# Obtener cantidad de personas por cantidad de dosis aplicadas y por sexo:
-prop_sexo_dosis <- data_per %>% 
-  group_by(sexo, orden_dosis) %>% 
-  summarise(n = n()) %>% 
-  mutate(proporcion = n / sum(n) * 100) 
-prop_sexo_dosis %>% 
-  ggplot(aes(sexo, orden_dosis, fill = orden_dosis)) +
-  geom_col() + 
-  labs(title = "Proporcion de personas por cantidad de dosis de vacunas separados por sexo")
-ggsave(paste0("png/prop_","sexo_dosis", ".png"))
-
-# Armar la tabla en formato wide
-dosis_personas_w <- data_per %>%
-  group_by(sexo, orden_dosis) %>% 
-  summarise(n = n()) %>% 
-  pivot_wider(names_from = sexo, 
-              values_from = n, 
-              values_fill = 0)
-print(dosis_personas_w)
-
-# Armar una tabla como antes, solo para M y con prop
-hombres_por_dosis <- data_per %>% 
-  filter(sexo == "M") %>% 
-  group_by(orden_dosis) %>% 
-  summarise(M_pob = n()) %>% 
-  mutate(M_nrel = M_pob/sum(M_pob) * 100,
-         Freq_rel_acum_M = (cumsum(M_pob) / sum(M_pob) * 100)) %>% 
-  arrange((orden_dosis))
-  
-# Armar una tabla como antes, solo para F y con prop
-mujeres_por_dosis <- data_per %>% 
-  filter(sexo == "F") %>% 
-  group_by(orden_dosis) %>%
-  summarise(F_pob = n()) %>%
-  mutate(F_nrel = F_pob/sum(F_pob) * 100,
-         Freq_rel_acum_F = (cumsum(F_pob) / sum(F_pob) * 100)) %>% 
-  arrange((orden_dosis)) 
-
-# Full outer join: combinacion externa es cuando algun codigo identificador no esta disponible en la otra base. 
-# En este caso debe agregarse el parametro all = TRUE para que aquellos sin coincidencia en el merge no se eliminen.
-sexojoin <- merge(hombres_por_dosis, mujeres_por_dosis, by = "orden_dosis", all = TRUE)
-sexojoin <- sexojoin %>% 
-  arrange((orden_dosis))
-
-# Reemplazar los valores NA por ceros
-#sexojoin <- sexojoin %>% mutate_all(~ifelse(is.na(.), 0, .))
-#sexojoin <- replace_na(sexojoin, replace = 0)
-
-print(dosis_personas)
-print(dosis_personas_w)
-print(hombres_por_dosis)
-print(mujeres_por_dosis)
-print(sexojoin)
-
-rm(hombres_por_dosis, mujeres_por_dosis)
-
-```
-De la tabla se extrae que porcentaje de cada grupo se encuentra mas inmunizado para cada nivel de inmunizacion representada por cada una nueva dosis aplicada. x_i:"5" aplicaciones el grupo_sex1:"M" tiene un %_1:"0%" mientras que el grupo_sex2:"F" tiene un %_2:"3%". y Así... Las mujeres se aplican más que los varones.
-
-# Hipótesis
-
-:::{.alert .alert-info}
-Finalmente, esta sección contiene al menos 3 hipótesis o preguntas que puedan ser respondidas a partir de los datos. Éstas tienen que ser más o menos interesantes y no cosas que se hayan respondido con la exploración anterior.
-
-Traten de que sean hipótesis o preguntas que relacionen 2 o más variables. Por ejemplo, “¿Cuál es el mes con más turistas en una región?” no es una pregunta intersante, pero “Existe una relación entre la cantidad de visitas y la cantidad de hoteles en una región” es una hipótesis más jugosa que apunta a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
-:::
-
-Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la poblacion se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad.
-
-1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. -> Se indagará sobre las etapas tempranas de vacunacion si las mismas fueron dirigidas a quien se esperaría como poblacion diana bajo la premisa anterior, en qué proporciones y su evolucion.
-
-1. Como segundo criterio ordenador de la estrategia de vacunacion se priorizo las personas que habitan grandes ciudades por la poca distancia que se mantiene y en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales.
-
-1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones. Días de descanso entre dosis que tiene en promedio cada poblacion objetivo mediante la fecha de aplicacion de cada registro para cada persona. -> Para eso se calculará la cantidad de dias promedio que pasan entre una dosis y otra. dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99.
-
-1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. -> Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
-
-1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Mediante datos espaciales disponibles en INDEC y datos abiertos se puede medir aproximadamente el desplazamiento entre ambos puntos. 
-
-1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunacion libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion.
-
-## Otras exploraciones posibles
-
-:::{.alert .alert-info}
-1. vac_inicia "vacunados con esquema iniciado"
-1. vac_completa "vacunados con esquema completo"
-1. group_by(sexo, grupo_etario)
-1. group_by(sexo, grupo_etario, condicion_salud)
-:::
-
+## Variables Espaciales
 ```{r jurisdicciones_cruce}
 
 #tabla cruce de migraciones residencia ~ lugar de aplicacion. A modo exploratorio.
@@ -954,3 +759,85 @@ jovenes <- data_reg %>%
 #condicion_sexo <- round(prop.table(condicion_sexo) * 100, 2)
 
 ```
+
+## Análisis hipotéticos 
+
+:::{.alert .alert.info}
+En esta sección se presentan relaciones entre variables con el fin de explorar entre los resultados anteriores cuales se corresponden con algun tipo de explicacion proveniente de fenomenos culturales y sociales.
+
+* Niveles de inmunización alcanzados por cada grupo de variables de interes.
+* Jovenes y la adherencia de los esquemas (estatico).
+
+:::
+
+### Niveles de inmunizacion por sexo
+```{r ls_prop_sexo_dosis, message=FALSE}
+
+source("scripts/ls_prop_sexo_dosis.R")
+
+#este R me gustaría trabajarlo en function, para poder iterar entre diferentes variables, por ejemplo condicion_aplicacion y así obtener con el agregado de una fecha de corte las frecuencias acumuladas de inmunizacion por niveles de dosis para cada grupo en diferentes momentos y crear un grafico interactivo sobre ello.
+
+ls_prop_sexo_dosis[["sexos_dosis"]] %>% 
+  knitr::kable(caption = "Nivel de inmunizacion por sexo", col.names = c("Nivel", "Masculinos", "Participacion masculinos", "Frecuencia acum. masc.", "Femeninos", "Participacion femeninos", "Frecuencia acum. feme."))
+
+```
+De la tabla, dificil de inteligir, se extrae qué porcentaje de cada grupo se encuentra mas inmunizado para cada nivel de inmunización. 
+
+Cuanto más alto el nivel de `Freq_rel_acum_sexo` vs el `otro`, el mas alto tiene mayor proporcion del grupo_sexo inmunizado a un menor nivel.
+
+# Hipótesis
+
+:::{.alert .alert-info}
+
+Aquí se presentan las hipótesis más jugosas que apuntan a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
+
+En esta sección se detallan las hipotesis programadas para guiar la exploración mas profunda del trabajo.
+
+Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la poblacion se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad y tener complicaciones, por otro lado con la restriccion de la poblacion atendible en cada zona geografica y la capacidad hospitalaria instalada.
+
+1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. Para este apartado se dividirá el periodo analizado en 3 segmentos:
+
+* la escasez de vacunas disponibles (2021)
+* la abundacia de vacunas (2022 a junio 2022)
+* el declive de la demanda de vacunas (julio 2022 al presente)
+
+
+2. Como segundo criterio ordenador de la estrategia de vacunacion se priorizó las personas que habitan grandes ciudades por la restricción espacial, poca distancia social inevitable y de habitat sobrepoblado, en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales, en donde `depto_residencia` sean mas numerosos agrupados contra los menos numerosos.
+
+1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones y en mayor cantidad (tendencia). Se obtendrán días de descanso entre dosis que tiene en promedio cada poblacion mediante la fecha de aplicacion de cada registro para cada persona. Para lograr esto sería deseable trabajar con toda la base en lugar de un recorte que permita alimentar mas el estadístico. Se calculará la cantidad de dias promedio que pasan entre una dosis y otra: dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99 promedio para cada grupo.
+
+1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
+
+1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Se creará a este efecto un cruce de jurisdicciones y un relevamiento de que jurisdicciones se hicieron cargo de su poblacion residente y cuales colaboraron con la vacunación de no residentes.
+
+1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunación libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion. Se observará el comportamiento de estos grupos: 
+
+* "individuos menores de 30 años sin factores de riesgo" vs 
+* "individuos mayores a 30 y menores de 60 años sin factores de riesgo" vs 
+* "mayores de 60 años sin factores de riesgo y espero que sea posible llegar a los 60 sin esos". 
+
+:::
+
+# Mejoras posibles
+
+## Funcion de graficos
+No funcionaron los intentos de hacer una funcion que grafique, esto seria muy bueno ya que muchos graficos que quisiera presentar mantienen un mismo estilo, estetica, y solo unica que requiere es intercambiar el nombre de una variable por otra.
+```{r grafico_estandar_function}
+print("la funcion de graficar no funciona")
+print("grafico_estandar(data = datos, x = one_var, y = any_var, fill = other_var)")
+```
+
+## Childs
+CHILD SUPPORT PLEASE
+https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
+```{r hijitus, eval=FALSE, include=FALSE, results='asis'}
+cat("knitr--knit_child()...scripts/variable_resume_estdesc_texto_graph.Rmd, quiet = TRUE")
+print("mi informe consta de varios pasos que si se me permite me gustaria dejar todo metido en un script, o tambien dejarlos en rmd y llamarlos mediante child. Algo lei en bookdown pero no llegue a tener exito con la prueba.")
+```
+## Poner etiquetas de datos a los graficos
+```{r}
+# ?text ## para agregar valores, no me funciono.
+```
+
+## Colores
+Mas colores: http://sape.inf.usi.ch/quick-reference/ggplot2/colour

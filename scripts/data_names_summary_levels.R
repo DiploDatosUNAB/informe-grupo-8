@@ -18,13 +18,13 @@ columnas_date <- names(data_per)[columnas_date]
 
 cat("\n")
 print("Character")
-print(paste0("variable ", columnas_ch, ": character"))
+print(paste0("...", columnas_ch, "..."))
 cat("\n")
 print("Numeric")
-print(paste0("variable ", columnas_num, ": es numerica"))
+print(paste0("...", columnas_num, "..."))
 cat("\n")
 print("Date")
-print(paste0("variable ", columnas_date, ": es fecha"))
+print(paste0("...", columnas_date, "..."))
 cat("\n")
 
 varlist_ch <- columnas_ch[-c(4, 5, 6, 8, 9, 10, 14)] 

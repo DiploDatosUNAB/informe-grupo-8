@@ -55,7 +55,8 @@ for (var in varlist) {
   
 }
 
-rm(list = c("mas_abs", "mas_rel", "var", "desctabla", "varlist", "varstat"))
+
+rm(list = c("mas_abs", "mas_rel", "var", "desctabla", "textabla", "varlist", "varstat"))
 #rm("fecha_corte", "fecha_i", "fecha_limite")
 
 #ls_genvar_estdesc
@@ -67,3 +68,31 @@ rm(list = c("mas_abs", "mas_rel", "var", "desctabla", "varlist", "varstat"))
 #  print(ls_genvar_estdesc[[var]])
 #  print(ls_genvar_texto[[var]])
 #}
+
+#--------------------------------------------------------------------------------------------------------------------
+
+varlist <- c("orden_dosis", "fecha_aplicacion")
+
+for (esta_variable in varlist) {
+  desctabla <- data_per %>% 
+    group_by(.data[[esta_variable]]) %>% 
+    summarise(n = n()) %>% 
+    mutate(prop = n / sum(n)*100)  
+  
+  # knitr::kable(caption = "Agrupamiento, Registros y Participación")
+  
+  # almacenar en lista
+  ls_genvar_estdesc[[esta_variable]] <- desctabla
+  
+  mas_abs <- desctabla %>% 
+    filter(prop == max(prop)) %>% 
+    select(.data[[esta_variable]])
+  
+  textabla <- data.frame(abs = mas_abs)
+  
+  # almacenar en lista
+  ls_genvar_texto[[esta_variable]] <- textabla
+  
+}
+
+rm("desctabla", "textabla")

@@ -3,21 +3,13 @@
 ## agrupaciones de levels(factor) y 
 ## armonizacion de grupos por grupo_etario y condicion_aplicacion.
 
-max(data_reg$fecha_aplicacion)
-
 ## ID_PERSONA
 data_reg <- data_reg %>% 
   rename(id_persona = id_persona_dw)
-## ID_PERSONA
 
 ## SEXO
-levels(factor(data_reg$sexo))
-
 data_reg <- data_reg %>% 
   mutate(sexo = ifelse(sexo=="X", "S.I.", sexo))
-
-levels(factor(data_reg$sexo))
-## SEXO
 
 ## GRUPO_ETARIO
 data_reg <- data_reg %>%
@@ -35,10 +27,8 @@ data_reg <- data_reg %>%
     grupo_etario == ">=100" ~ "100-199",
     TRUE ~ grupo_etario
   ))
-## GRUPO_ETARIO
 
 ## CONDICION_APLICACION
-
 data_reg <- data_reg %>% 
   mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
 
@@ -59,33 +49,15 @@ data_reg <- data_reg %>%
     condicion_aplicacion == "SIN Factores de Riesgo" ~ "Factores Riesgo OFF",
     TRUE ~ condicion_aplicacion
   ))
-## CONDICION_APLICACION
 
-
-
-
-
-
-
-
-
-
-
-max(data_per$fecha_aplicacion)
 
 ## ID_PERSONA
 data_per <- data_per %>% 
   rename(id_persona = id_persona_dw)
-## ID_PERSONA
 
 ## SEXO
-levels(factor(data_per$sexo))
-
 data_per <- data_per %>% 
   mutate(sexo = ifelse(sexo=="X", "S.I.", sexo))
-
-levels(factor(data_per$sexo))
-## SEXO
 
 ## GRUPO_ETARIO
 data_per <- data_per %>%
@@ -103,10 +75,8 @@ data_per <- data_per %>%
     grupo_etario == ">=100" ~ "100-199",
     TRUE ~ grupo_etario
   ))
-## GRUPO_ETARIO
 
 ## CONDICION_APLICACION
-
 data_per <- data_per %>% 
   mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
 
@@ -127,5 +97,3 @@ data_per <- data_per %>%
     condicion_aplicacion == "SIN Factores de Riesgo" ~ "Factores Riesgo OFF",
     TRUE ~ condicion_aplicacion
   ))
-## CONDICION_APLICACION
-

@@ -13,3 +13,5 @@ for (unidad_tiempo in sumdosis_varlist){
     mutate(part_dosis = suma_dosis / sum(suma_dosis) * 100) %>% 
     arrange({{unidad_tiempo}})
 }
+
+rm(sumdosis_varlist, unidad_tiempo)
