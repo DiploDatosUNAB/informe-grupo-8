@@ -1,0 +1,107 @@
+---
+title: "Untitled"
+author: "LAUTA"
+date: "2023-05-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+# Cargo datos y manipulo
+```{r message=FALSE, include=FALSE, paged.print=TRUE}
+#rm(list = ls())
+file_path <- "datos/datos_nomivac_covid19.csv"
+data <- read_csv(file_path, n_max = 1500, show_col_types = FALSE)
+source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = TRUE)
+```
+
+# Vector con los nombres de las variables
+```{r}
+varlist <- c("sexo", "grupo_etario", "condicion_aplicacion", "vacuna", "jurisdiccion_aplicacion", "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
+```
+
+# Lista para almacenar los resultados de tablas descriptivas
+```{r}
+desclist <- list()
+atexto <- list()
+```
+
+# Bucle para iterar sobre cada variable
+```{r}
+# Realizar el procesamiento para cada variable (se llama variables dinamica a la iterada)
+for (var in varlist) {
+  desctabla <- data %>%
+    group_by(id_persona) %>%
+    filter(fecha_aplicacion == max(fecha_aplicacion)) %>%
+    group_by(.data[[var]]) %>%
+    summarise(min_dosis = min(orden_dosis),
+              mean_dosis = mean(orden_dosis),
+              max_dosis = max(orden_dosis),
+              poblacion = length(orden_dosis),
+              total_dosis = mean_dosis * poblacion) %>%
+    mutate(participacion = poblacion / sum(poblacion) * 100) %>% 
+    arrange(.data[[var]])
+
+## Almacenar el resultado en la lista  
+  desclist[[var]] <- desctabla
+  
+# Datos para reemplazar en el texto del Rmd
+  
+## fecha de corte
+fecha_i <- summarise(data, max(fecha_aplicacion))
+
+## mas_abs: el grupo que en valor absoluto recibió más vacunas
+mas_abs <- desctabla %>% 
+  filter(total_dosis == max(total_dosis)) %>% 
+  select(.data[[var]])
+
+## mas_rel: el grupo que en promedio recibió más vacunas
+mas_rel <- desctabla %>% 
+  filter(mean_dosis == max(mean_dosis)) %>% 
+  select(.data[[var]])
+
+atexto[[var]] <- c(fecha_i, mas_abs, mas_rel)
+}
+
+rm(list = c("fecha_i", "mas_abs", "mas_rel", "var"))
+```
+Esto probablemente seria mas facil con una funcion.
+
+# Acceder a las tablas de resultados descriptivos de cada variable
+```{r}
+for (var in varlist) {
+  print(paste("Resultados para", var, ":"))
+  print(desclist[[var]])
+}
+```
+Para indicarle a un R Markdown en RStudio que una variable es dinámica y debe interpretarse como una expresión "dinamica" valga la redundancia es neceario en un for (var in varlist) { group_by(.data[[vardin]]) %>% ... }
+
+ahora la version completa del iterable:
+
+# hacer una ´rueba de fecha de corte:
+```{r}
+fecha_corte <- "2022-01-01"
+vardin <- data$sexo
+varstat <- data$orden_dosis
+desctabla <- data %>%
+  group_by(id_persona) %>%
+  filter(fecha_aplicacion <= fecha_corte) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>%
+  group_by(sexo) %>%
+  summarise(min_dosis = min(varstat),
+            mean_dosis = mean(varstat),
+            max_dosis = max(varstat),
+            poblacion = length(varstat),
+            n_dosis = mean_dosis * poblacion) %>%
+  mutate(participacion = poblacion / sum(poblacion) * 100) %>% 
+  arrange(sexo)
+
+print(desctabla)
+
+```
+
