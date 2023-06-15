@@ -8,6 +8,9 @@ varstat <- "dosis"
 #fecha_limite <- "2022-12-30"
 #filter(fecha_aplicacion <= fecha_limite) 
 
+# Obtener los nombres de las columnas de tipo character
+varlist <- names(data_per)[sapply(data_per, is.character)]
+
 # Realizar el procesamiento para cada variable (se llama variables dinamica a la iterada)
 for (var in varlist) {
   desctabla <- data_per %>%

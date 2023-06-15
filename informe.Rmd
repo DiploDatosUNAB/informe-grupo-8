@@ -22,285 +22,80 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
-library(tidyverse)
-library(stringr)
 library(lubridate)
-#source("scripts/prueba_knit.R")
-#source("scripts/function_grafico_estandar.R") ## NO LA PUDE HACER ANDAR
-#source("scripts/function_obtener-estadisticos.R") ## NO LA PUDE HACER ANDAR
-#source("scripts/function_obtener-estadisticos2.R") ## NO LA PUDE HACER ANDAR
-#library(ggwordcloud)
+library(stringr)
+library(tidyverse)
+#library(scales)
 #library(janitor)
-
-source("functions/tabla_general.R")
+#library(target)
 
 ```
 
-# Introducción al uso de datos de la base NOMIVAC.
-
-## Importar datos -> Muestra
-Se importan los datos en un dataframe de nombre `data`. Se limita la cantidad máxima de filas a importar en la variable `mi_muestra_registros`.
-```{r importa_muestra, echo=TRUE, message = FALSE}
-rm(list = ls())
-# Defino mi muestra de registros
+# Carga de datos 
+```{r}
 mi_muestra_registros <- 2000
-source("scripts/importar-datos.R")
-```
-## Limpieza de observaciones duplicadas
-Se conservan registros unicamente de personas que para su ultima fecha de vacunacion presentan un unico registro. Es decir, si la persona en su ultima vacunacion aparece en mas de una fila se elimina. Para más detalles, consultar el script a continuacion. Se almacenan 2 data sets:
+mi_sample_registros  <- 1000
 
-1. data 1 persona: 1 fila, el último registro `data_per`. Esta representa una *"foto"* estática o estado de situación de vacunación del individuo hasta un momento dado.
+#source("scripts/carga_datos.R")
 
-1. data 1 persona: 1 =< filas (registros de vacunación) `data_reg`.
-```{r data_filter_duplicados}
-source("scripts/data_filter_duplicados.R")
-```
+## Importar datos
+source("scripts/importar_data.R")
 
-## Seleccion del sample
-Se realiza un **sample** de la muestra de datos importada y filtrada al environment para reducir el tiempo computacional del procesamiento del informe. `mi_sample_registros`
-```{r data_sample, message=FALSE, warning=FALSE}
-# Defino mi sample registros
-mi_sample_registros <- 1000
-source("scripts/data_sample.R")
-```
-
-# Exploración de los datos
-:::{.alert .alert-info}
-
-Esta sección contiene una breve descripción de los datos cargados.
-
-* Estructura de los datos
-  * Intervalo de fechas del registro
-  * Rango y magnitud de la base
-
-* Descripcion de variables de interés
-  * Nombre y tipo de variables
-  * Dominio de las variables (valores únicos)
-  
-:::
-
-## Estructura de los datos
-
-*  Intervalo de fechas del registro (primero y último de la muestra aleatoria):
-
-La primer observacion se registró el: **`r min(data_reg$fecha_aplicacion)`** 
-
-y la última se registró el: **`r max(data_reg$fecha_aplicacion)`**.
-
-* Rango y magnitud de la base (cantidad de observaciones y variables)
-
-Se presentan las dimensiones de la base `data_per` y `data_reg`:
-
-  * Cantidad de filas u observaciones (individuos) consideradas en `data_per` (n) es de: `r nrow(data_per)`.
-  
-  * Cantidad de filas u observaciones (registros) consideradas en `data_reg` (n) es de: `r nrow(data_reg)`.
-
-  * Cantidad de columnas_variables (m) en ambas bases es: `r mean(ncol(data_reg), ncol(data_per))`.
-
-  * Dimensiones `data_per`, n | m: `r dim(data_per)`, un dataframe de "cantidad de celdas" `r nrow(data_per)*ncol(data_per)`.
-  
-  * Dimensiones `data_reg`, n | m: `r dim(data_reg)`, un dataframe de "cantidad de celdas" `r nrow(data_reg)*ncol(data_reg)`. 
-
-## Descripción de variables
-
-* Los nombres de las variables son las siguientes: `r colnames(data_per)`
-
-* El tipo de variables se describe a continuación mediante a la segmentación de columnas por `character`, `numeric`, `Date`.
-
-* Adicionalmente el rango, es decir, el dominio de la variable se presenta para las variables `character` solamente para algunas.
-```{r data_names_summary_levels}
-source("scripts/data_names_summary_levels.R")
-```
-```{r keep_order}
-rm(columnas_ch, varlist_ch, columnas_date, varlist_date, columnas_num, varlist_num)
-```
-
-
-# Manipulacion de datos.
-:::{.alert .alert-info}
-Esta sección sirve para compartimentar la edición y generación de nuevos objetos dentro del enviroment.
-
-* Se agregan variables temporales con uso de lubridate para extender las bases.
-
-* Se renombran variables, corrigen valores y reagrupan para una mejor utilización de las mismas.
-
-* Se crean nuevos objetos para utilizacion en tablas y gráficos exploratorios de variables de interés. En particular las listas:
- 
-  * `ls_genvar_estdesc` una lista que contiene agrupaciones por variable generica de interes (chars) y expresa para esos grupos las siguientes columnas: 
-    * Agrupamiento segun `variable de interes` (char) `ls_genvar_estdesc[["var"]][1]`.
-    * Valores mínimos, medios y máximos de `orden_dosis` (cantidad de dosis) `ls_genvar_estdesc[["var"]][2:4]`.
-    * Cantidad de registros acumulados por grupo (N_i * mean_i) `ls_genvar_estdesc[["var"]][5]`.
-    * Población (N_i): cantidad de miembros que componen el grupo `ls_genvar_estdesc[["var"]][6]`.
-    * Población relativa (N_rel): participación del grupo sobre el total de individuos.`ls_genvar_estdesc[["var"]][7]`.
-  
-  * `ls_genvar_texto` una lista que contiene el nombre de cada grupo de cada variable generica de interes (chars) que expresa el grupo mas aplicado en cantidad de dosis:
-    * Agrupamiento segun `variable de interes` (char)
-    * Grupo con mayor cantidad *absoluta* de dosis recibidas `ls_genvar_texto[["var"]][1]`.
-    * Grupo con mayor cantidad *promedio* de dosis recibidas `ls_genvar_texto[["var"]][2]`.
-
-  * `ls_timvar_sumdosis` una lista que contiene para cada agregación de unidad temporal una tabla de resumen con la cantidad de personas vacunadas y proporción sobre el total.
-  
-:::
-
-## Agregacion de variables temporales.
-Se hace uso de lubridate para sobreescribir las bases de datos de registros y de personas con variables que identifican unidades temporales diferentes.
-```{r mutate_data_lubridate}
-source("scripts/data_mutate_lubridate.R")
-```
+## Revision de filas repetidas
+source("scripts/filtrar_data_repetida.R")
 
 ## Adecuación de valores (edición, agrupación y homogeneización)
-En el siguiente archivo `scripts/normalizacion-variables-valores.R` se renombran variables, se remplazan valores de variables y se agrupan valores.
-```{r normalizacion_valores, eval=TRUE, echo=FALSE, include=TRUE, paged.print=FALSE}
-source("scripts/normalizacion-variables-valores.R", local = TRUE, echo = FALSE)
+source("scripts/arreglar_variables.R", local = TRUE, echo = FALSE)
+
+## Agregacion de variables temporales.
+source("scripts/agregar_variables_temporales.R")
+
+## Obtener cohorte con ultima fecha_aplicacion
+source("scripts/obtener_registros.R")
+
+## Seleccion del sample "cohorte - individuos"
+source("scripts/samplear_data.R")
 ```
 
-## Generación de objetos del environment
-
-* Se crea la lista de elementos `ls_genvar_estdesc` y `ls_genvar_texto`.
-```{r ls_genvar_estdesc, echo = TRUE, warning=FALSE, include=TRUE}
-# Seleccion de variables para armado de tablas de estadisticos descriptivos:
-varlist <- c("sexo", "grupo_etario", "condicion_aplicacion", "vacuna", 
-             "nombre_dosis_generica", "lote_vacuna", "jurisdiccion_aplicacion", 
-             "jurisdiccion_residencia", "depto_aplicacion", "depto_residencia")
-source("scripts/ls_genvar_estdesc.R")
-```
-
-* Se crea el dataframe de `aplicaciones_diarias`.
-```{r df_aplicaciones_diarias}
-source("scripts/df_aplicaciones_diarias.R")
-```
-
-* Se crea la lista de elementos `ls_timvar_sumdosis`
-```{r ls_timvar_sumdosis}
-source("scripts/ls_timvar_sumdosis.R")
-```
-
-# Variables Estáticas: Tablas y gráficos 
-:::{.alert .alert-info}
-
-Esta sección contiene visualizaciones tabulares y gráficas estandarizadas y **estáticas** para variables de interés. 
-
-Todos los resultados que se presentan en esta seccion hacen referencia a una *foto* en el tiempo. 
-
-Es decir, las tablas y gráficos corresponden a un *estado de situación* en un momento determinado.
-
-Mas adelante, en la próxima sección, se realizan análisis **dinámicos** de la evolución temporal de los datos y estadísticas afínes.
-
-* Tablas estadísticas
-  * Agrupamiento de individuos `id_persona`
-  * Filtrado del último registro del individuo por fecha `fecha_aplicacion`
-  * Agrupamiento por variable de interés `vardin`
-  * Valores mínimos, medios y máximos de `varstat`
-  * Población (n_abs): cantidad de miembros que componen el grupo (`vardin`)
-  * Cantidad de registros acumulados por grupo (mean_i * N_i) 
-  * Población relativa (n_rel): participación del grupo sobre el total de observaciones.
-  
-* Gráficos que pueden incluir 
-  * Barras
-  * Líneas
-  * Puntos
-  * Boxplots
-
-:::
-## FUNCIONES
+# Generacion de tablas (for) y funciones
 ```{r}
+## Generación de objetos del environment
+source("scripts/ls_genvar_estdesc.R") ## eliminar los elementos tiempo.
+source("scripts/df_aplicaciones_diarias.R")
+source("scripts/ls_timvar_sumdosis.R")
+source("scripts/ls_prop_sexo_dosis.R")
+
+source("scripts/df_piramide_poblacional.R")
+source("scripts/df_datos_espaciales.R")
+
+## Funciones para estadisticos de tabla general y grafico estandar
 source("functions/tabla_general.R")
 source("functions/grafico_estandar.R")
 ```
 
-
-```{r}
-ls_genvar_estdesc$sexo
-grafico_estandar(ls_genvar_estdesc, "sexo", "poblacion")
-tabla_general(ls_genvar_estdesc, "sexo")
-```
-
-## Variable `sexo`
-```{r sexo_general, include=TRUE}
-
-ls_genvar_estdesc$sexo %>% 
-  knitr::kable(caption = "Variable Sexo - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
-                      "Dosis minima", 
-                      "Dosis promedio", 
-                      "Dosis maxima", 
-                      "Dosis totales", 
-                      "Poblacion", 
-                      "Participacion"))
-
-```
-
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["sexo"]]["sexo"]` con `r scales::comma(max(ls_genvar_estdesc[["sexo"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
-1. La población que mas rebició vacunas en valor ralativo es: `r ls_genvar_texto[["sexo"]]["sexo.1"]` con `r round(max(ls_genvar_estdesc[["sexo"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
-
-```{r gh_est_sexo, fig.show='hold', message=FALSE, out.width="50%"}
-
-ls_genvar_estdesc$sexo %>% 
-  ggplot(mapping = aes(sexo, total_dosis)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","sexo", "_","total_dosis", ".png"))
-
-ls_genvar_estdesc$sexo %>% 
-  ggplot(mapping = aes(sexo, mean_dosis)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","sexo", "_","mean_dosis", ".png"))
-```
-
-## Variable `grupo_etario`
-```{r grupo_etario_general, include=TRUE}
-
-ls_genvar_estdesc$grupo_etario %>% 
-  knitr::kable(caption = "Variable Grupo_etario - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
-                      "Dosis minima", 
-                      "Dosis promedio", 
-                      "Dosis maxima", 
-                      "Dosis totales", 
-                      "Poblacion", 
-                      "Participacion"))
-
-```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario"]` con `r scales::comma(max(ls_genvar_estdesc[["grupo_etario"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
-1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["grupo_etario"]]["grupo_etario.1"]` con `r round(max(ls_genvar_estdesc[["grupo_etario"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
-
-```{r gh_est_grupo_etario, fig.show='hold', message=FALSE, out.width="50%"}
-
-ls_genvar_estdesc$grupo_etario %>% 
-  ggplot(mapping = aes(grupo_etario, total_dosis)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","total_dosis", ".png"))
-
-ls_genvar_estdesc$grupo_etario %>% 
-  ggplot(mapping = aes(grupo_etario, mean_dosis)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","grupo_etario", "_","mean_dosis", ".png"))
-```
-
+# Variables estaticas
 ## Variable `condicion_aplicacion`
 ```{r condicion_aplicacion_general, include=TRUE}
-
-ls_genvar_estdesc$condicion_aplicacion %>% 
-  knitr::kable(caption = "Variable Condicion_aplicacion - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
-                      "Dosis minima", 
-                      "Dosis promedio", 
-                      "Dosis maxima", 
-                      "Dosis totales", 
-                      "Poblacion", 
-                      "Participacion"))
-
+ls_genvar_estdesc$condicion_aplicacion
+tabla_general(ls_genvar_estdesc, "condicion_aplicacion")
+grafico_estandar(ls_genvar_estdesc, "condicion_aplicacion", "mean_dosis")
 ```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion"]` con `r scales::comma(max(ls_genvar_estdesc[["condicion_aplicacion"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
-1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["condicion_aplicacion"]]["condicion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["condicion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
+
+esta_variable <- "condicion_aplicacion"
+total_dosis <- "total_dosis"
+mas_abs <- paste0(esta_variable,".1") o "mas_abs"
+mas_rel <- paste0(esta_variable,".2") o "mas_rel"
+mean_dosis <- "mean_dosis"
+
+1. La población que mas rebició vacunas en valor absoluto es: 
+`r ls_genvar_texto[[esta_variable]][mas_abs]` con 
+`r scales::comma(max(ls_genvar_estdesc[[esta_variable]][total_dosis]))` 
+dosis aplicadas sobre este grupo.
+
+1. La población que mas rebició vacunas en valor relativo es: 
+`r ls_genvar_texto[[esta_variable]][mas_rel]` con 
+`r round(max(ls_genvar_estdesc[[esta_variable]][mean_dosis]),2)`
+dosis promedio aplicadas sobre este grupo.
 
 ```{r gh_est_cond_aplic, fig.show='hold', message=FALSE, out.width="50%"}
 
@@ -319,110 +114,6 @@ ls_genvar_estdesc$condicion_aplicacion %>%
   labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
 
 ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
-```
-
-## Variable `jurisdiccion_aplicacion`
-```{r jurisdiccion_aplicacion_general, include=TRUE}
-
-ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
-  knitr::kable(caption = "Variable Jurisdiccion_aplicacion - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
-                      "Dosis minima", 
-                      "Dosis promedio", 
-                      "Dosis maxima", 
-                      "Dosis totales", 
-                      "Poblacion", 
-                      "Participacion"))
-
-```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion"]` con `r scales::comma(max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
-1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["jurisdiccion_aplicacion"]]["jurisdiccion_aplicacion.1"]` con `r round(max(ls_genvar_estdesc[["jurisdiccion_aplicacion"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
-
-```{r gh_est_jur_aplic, fig.show='hold', message=FALSE, out.width="50%"}
-
-ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
-  ggplot(mapping = aes(jurisdiccion_aplicacion, total_dosis)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","total_dosis", ".png"))
-
-ls_genvar_estdesc$jurisdiccion_aplicacion %>% 
-  ggplot(mapping = aes(jurisdiccion_aplicacion, mean_dosis)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","jurisdiccion_aplicacion", "_","mean_dosis", ".png"))
-```
-
-## Variable `vacuna`
-```{r vacuna_general, include=TRUE}
-
-ls_genvar_estdesc$vacuna %>% 
-  knitr::kable(caption = "Variable Vacuna - Estadisticas descriptivas sobre dosis aplicadas al grupo", col.names = c("Grupo", 
-                      "Dosis minima", 
-                      "Dosis promedio", 
-                      "Dosis maxima", 
-                      "Dosis totales", 
-                      "Poblacion", 
-                      "Participacion"))
-
-```
-1. La población que mas rebició vacunas en valor absoluto es: `r ls_genvar_texto[["vacuna"]]["vacuna"]` con `r scales::comma(max(ls_genvar_estdesc[["vacuna"]]["total_dosis"]))` dosis aplicadas sobre este grupo.
-1. La población que mas rebició vacunas en valor relativo es: `r ls_genvar_texto[["vacuna"]]["vacuna.1"]` con `r round(max(ls_genvar_estdesc[["vacuna"]]["mean_dosis"]),2)` dosis promedio aplicadas sobre este grupo.
-
-```{r gh_est_vacuna, fig.show='hold', message=FALSE, out.width="50%"}
-
-ls_genvar_estdesc$vacuna %>% 
-  ggplot(mapping = aes(vacuna, total_dosis)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","vacuna", "_","total_dosis", ".png"))
-
-ls_genvar_estdesc$vacuna %>% 
-  ggplot(mapping = aes(vacuna, mean_dosis)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","vacuna", "_","mean_dosis", ".png"))
-```
-
-## Variable `fecha_aplicacion`
-Fechas en qué más dosis fueron aplicadas.
-```{r fecha_aplicacion_general}
-ls_genvar_estdesc$fecha_aplicacion %>% arrange(desc(prop)) %>% head(5) %>% 
-  knitr::kable(caption = "Agrupamiento, Registros y Participacion", col.names = c("Fecha de aplicacion", "Cantidad de dosis", "Peso sobre el total"))
-```
-La cantidad maxima de dosis aplicadas, **`r scales::comma(max(ls_genvar_estdesc[["fecha_aplicacion"]]["n"]))`)** en tan solo un día, fué el: **`r ls_genvar_texto[["fecha_aplicacion"]]["fecha_aplicacion"]`**.
-
-## Variable `orden_dosis`
-Cantidad de personas por cantidad de dosis aplicadas.
-```{r orden_dosis_general}
-ls_genvar_estdesc$fecha_aplicacion %>% arrange(desc(prop)) %>% head(5) %>% 
-  knitr::kable(caption = "Agrupamiento, Registros y Participacion", col.names = c("Fecha de aplicacion", "Cantidad de dosis", "Peso sobre el total"))
-```
-El *modo o moda* de dosis aplicadas a cada individuo es de **`r ls_genvar_texto[["orden_dosis"]]["orden_dosis"]`** dosis, y esta cantidad fué aplicada a una población de **`r max(ls_genvar_estdesc[["orden_dosis"]]["n"])`**.
-
-Se observan las frecuencias de las veces que las personas fueron vacunadas segun cantidad de dosis, y en la otra tabla se obtiene la cantidad de dosis aplicadas por fecha, para las últimas aplicaciones dadas a cada persona. 
-
-```{r gh_est_fecha-apli_y_ord-dosis, fig.show='hold', out.width = "50%"}
-ls_genvar_estdesc$fecha_aplicacion %>% 
-  ggplot(mapping = aes(fecha_aplicacion, n)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales aplicadas cada dia")
-
-ls_genvar_estdesc$orden_dosis %>% 
-  ggplot(mapping = aes(orden_dosis, n)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de individuos segun cantidad de dosis aplicadas")
-
-
 ```
 
 ## Caracterizacion de la poblacion
@@ -445,11 +136,7 @@ df_piramide_poblacional %>%
 ggsave(paste0("png/piramide_poblacional_","sexo_grupo_etario", ".png"))
 
 ```
-Gracias Elio por el material: 
-Me hubiera gustado y queda pendiente terminar la biblio generando una funcion como explica en el paso a paso y centrar el cero en el grafico con igual espacio a cada lado.
-https://www.njtierney.com/post/2022/08/09/ggplot-pyramid/
 
-# Variables Dinámicas
 
 :::{.alert .alert.info}
 
@@ -774,13 +461,6 @@ Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemi
 
 # Mejoras posibles
 
-## Funcion de graficos
-No funcionaron los intentos de hacer una funcion que grafique, esto seria muy bueno ya que muchos graficos que quisiera presentar mantienen un mismo estilo, estetica, y solo unica que requiere es intercambiar el nombre de una variable por otra.
-```{r grafico_estandar_function}
-print("la funcion de graficar no funciona")
-print("grafico_estandar(data = datos, x = one_var, y = any_var, fill = other_var)")
-```
-
 ## Childs
 CHILD SUPPORT PLEASE
 https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
@@ -788,6 +468,7 @@ https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
 cat("knitr--knit_child()...scripts/variable_resume_estdesc_texto_graph.Rmd, quiet = TRUE")
 print("mi informe consta de varios pasos que si se me permite me gustaria dejar todo metido en un script, o tambien dejarlos en rmd y llamarlos mediante child. Algo lei en bookdown pero no llegue a tener exito con la prueba.")
 ```
+
 ## Poner etiquetas de datos a los graficos
 ```{r}
 # ?text ## para agregar valores, no me funciono.

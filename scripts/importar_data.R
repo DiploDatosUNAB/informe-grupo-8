@@ -6,7 +6,7 @@
 library(readr)
 
 # Especifico el path de mi archivo CSV
-file_path <<- "datos/datos_nomivac_covid19.csv"
+file_path <- "datos/datos_nomivac_covid19.csv"
 
 # Importo unicamente las X filas que quiero de ese archivo
 data_registro <- readr::read_csv(file_path, n_max = mi_muestra_registros, show_col_types = FALSE)
