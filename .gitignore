@@ -37,3 +37,12 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+
+# Step 1. Add the folder path to your repo's root .gitignore file.
+
+png/
+
+# Step 2. Remove the folder from your local git tracking, but keep it on your disk.
+
+git rm -r --cached png/
