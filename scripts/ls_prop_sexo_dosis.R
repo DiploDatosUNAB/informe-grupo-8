@@ -6,12 +6,12 @@ ls_prop_sexo_dosis[["sexo_dosis"]] <- data_per %>%
   summarise(n = n()) %>% 
   mutate(proporcion = n / sum(n) * 100) 
 
-ls_prop_sexo_dosis[["sexo_dosis"]] %>% 
-  ggplot(aes(sexo, orden_dosis, fill = orden_dosis)) +
-  geom_col() + 
-  theme_classic() +
-  labs(title = "Proporcion de personas por cantidad de dosis de vacunas separados por sexo")
-ggsave(paste0("png/prop_","sexo_dosis", ".png"))
+#ls_prop_sexo_dosis[["sexo_dosis"]] %>% 
+#  ggplot(aes(sexo, orden_dosis, fill = orden_dosis)) +
+#  geom_col() + 
+#  theme_classic() +
+#  labs(title = "Proporcion de personas por cantidad de dosis de vacunas separados por sexo")
+#ggsave(paste0("png/prop_","sexo_dosis", ".png"))
 
 # Armar la tabla en formato wide
 ls_prop_sexo_dosis[["sexo_dosis_w"]] <- data_per %>%
@@ -21,8 +21,9 @@ ls_prop_sexo_dosis[["sexo_dosis_w"]] <- data_per %>%
               values_from = n, 
               values_fill = 0)
 
-ls_prop_sexo_dosis[["sexo_dosis_w"]] %>% 
-  knitr::kable(caption = "Nivel de inmunización por sexo", col.names = c("Nivel", "Femenino", "Masculino", "S.I."))
+#ls_prop_sexo_dosis[["sexo_dosis_w"]] %>% 
+#  knitr::kable(caption = "Nivel de inmunización por sexo", 
+#               col.names = c("Nivel", "Femenino", "Masculino", "S.I."))
 
 # Armar una tabla como antes, solo para M y con prop
 ls_prop_sexo_dosis[["sexo_masc_dosis"]] <- data_per %>% 

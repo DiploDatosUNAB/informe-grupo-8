@@ -4,15 +4,15 @@
 ## armonizacion de grupos por grupo_etario y condicion_aplicacion.
 
 ## ID_PERSONA
-data_reg <- data_reg %>% 
+data_registros_unicos <- data_registros_unicos %>% 
   rename(id_persona = id_persona_dw)
 
 ## SEXO
-data_reg <- data_reg %>% 
+data_registros_unicos <- data_registros_unicos %>% 
   mutate(sexo = ifelse(sexo=="X", "S.I.", sexo))
 
 ## GRUPO_ETARIO
-data_reg <- data_reg %>%
+data_registros_unicos <- data_registros_unicos %>%
   mutate(grupo_etario = case_when(
     grupo_etario == "<12"   ~ "000-012",
     grupo_etario == "12-17" ~ "012-017",
@@ -29,15 +29,15 @@ data_reg <- data_reg %>%
   ))
 
 ## CONDICION_APLICACION
-data_reg <- data_reg %>% 
+data_registros_unicos <- data_registros_unicos %>% 
   mutate(condicion_aplicacion = ifelse(condicion_aplicacion == "60 o más años", "Adulto mayor", condicion_aplicacion))
 
-data_reg <- data_reg %>%
+data_registros_unicos <- data_registros_unicos %>%
   mutate(condicion_aplicacion = ifelse(stringr::str_detect(condicion_aplicacion, "años"), 
                                        stringr::str_extract(condicion_aplicacion, "(?<=años\\s).*"),
                                        condicion_aplicacion))
 
-data_reg <- data_reg %>%
+data_registros_unicos <- data_registros_unicos %>%
   mutate(condicion_aplicacion = case_when(
     condicion_aplicacion == "Adulto mayor"           ~ "Adulto mayor",
     condicion_aplicacion == "Estratégico"            ~ "Estratégico",

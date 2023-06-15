@@ -17,6 +17,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 # Cargar los paquetes necesarios acá
 
+rm(list=ls())
+
 library(rmarkdown)
 library(readr)
 library(dplyr)
@@ -32,9 +34,9 @@ library(tidyverse)
 ```
 
 # Carga de datos 
-```{r}
-mi_muestra_registros <- 2000
-mi_sample_registros  <- 1000
+```{r carga_datos}
+mi_muestra_registros <- 5000
+mi_sample_registros  <- 3000
 
 #source("scripts/carga_datos.R")
 
@@ -50,19 +52,31 @@ source("scripts/arreglar_variables.R", local = TRUE, echo = FALSE)
 ## Agregacion de variables temporales.
 source("scripts/agregar_variables_temporales.R")
 
+## Seleccion del sample "cohorte - individuos"
+source("scripts/samplear_data.R")
+
 ## Obtener cohorte con ultima fecha_aplicacion
 source("scripts/obtener_registros.R")
 
-## Seleccion del sample "cohorte - individuos"
-source("scripts/samplear_data.R")
 ```
 
 # Generacion de tablas (for) y funciones
-```{r}
+```{r generacion_objetos}
+
+## Set de varlists en Values 
+source("scripts/varlists_values.R")
+
 ## Generación de objetos del environment
-source("scripts/ls_genvar_estdesc.R") ## eliminar los elementos tiempo.
+
+### ls_ed_df
+source("scripts/ls_estadesc1.R")
+source("scripts/ls_estadesc2.R")
+
+### ls_tv_sumdosis
 source("scripts/df_aplicaciones_diarias.R")
-source("scripts/ls_timvar_sumdosis.R")
+source("scripts/ls_tv_sumdosis.R")
+
+## este puede generalizarse no solo para sexo y mejorar que las barras con fill sean apiladas
 source("scripts/ls_prop_sexo_dosis.R")
 
 source("scripts/df_piramide_poblacional.R")
@@ -240,6 +254,8 @@ Con cada nueva partición de la unidad temporal se puede apreciar con mayor deta
 
 
 ```{r hp_1_aplic_prioriza, fig.show='hold', message=FALSE, out.width = "30%"}
+
+LUEGO DE AGRUPAR CONDICIONES DE SALUD HABRIA QUE REALIZAR EL 100% de barras apiladas y comparar entre estos periodos.
 
 # 2021
 data_reg %>% 

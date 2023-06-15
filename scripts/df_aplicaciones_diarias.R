@@ -15,7 +15,7 @@ aplicaciones_diarias <- data_reg %>%
          anio_dia = paste0(anio,"-",dia))
 ## variables tiempo con lubridate - anio, mes, semana, dia y combinaciones. Adicionalmente para semana se especifica el formato para que no se elimine el cero delante. El cero delante ya lo deja por default para el mes.
 
-head(aplicaciones_diarias[1:10,1:9])
+#head(aplicaciones_diarias[1:10,1:9])
 # Ya tengo una tabla de nombre `r aplicaciones_diarias` que me permite utilizar diferentes enfoques para analizar el fenomeno temporal de la vacunacion. Voy a realizar sumas para cada unidad de tiempo y almacenar los resultados en una lista.
 
 # Con la tabla de `aplicaciones_diarias` creada me puedo fijar rapidamente con unos graficos simples, tendencias en la concurrencia a los vacunatorios e indagar como se distribuyen las vacunas entre los dias de la semana, las semanas, los meses, los años y entre los dias de cada año, las semanas de cada año y los meses de cada año.

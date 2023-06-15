@@ -1,5 +1,4 @@
-
-#source("scripts/data_sample.R")
+#source("scripts/samplear_data.R")
 
 # Mi sample persona es la muestra de personas que se extrae. 
 # Esto va implicar que estas son las personas que tendran inclusion en el analisis y 
@@ -7,30 +6,20 @@
 # Adicionalmente estas personas y sus registros de vacunacion seran incluidos 
 # en los analisis temporales de la ultima parte.
 
-# AHORA SI VOLVAMOS CON LA PRACTICA 
+# Cuando se realiza SAMPLE recordar si el experimento es con REPOSICION o SIN.
 set.seed(8)
 
-id_keep <- data_per[sample(1:nrow(data_per), mi_sample_registros, replace = FALSE), "id_persona"]
-id_keep_merge_reg <- id_keep %>% 
-  inner_join(data_reg, by = "id_persona")
-id_keep_merge_per <- id_keep %>% 
-  inner_join(data_per, by = "id_persona")
+data_reg <- data_registros_unicos[sample(1:nrow(data_registros_unicos), 
+                                        mi_sample_registros, 
+                                        replace = FALSE), ]
 
-assign("data_reg", id_keep_merge_reg, envir = .GlobalEnv)
-assign("data_per", id_keep_merge_per, envir = .GlobalEnv)
+print(paste("Reporte, samplear_data.R: esta muestra aleatoria samplea", 
+            scales::comma(nrow(data_reg)), 
+            "registros."))
 
-rm(id_keep, id_keep_merge_per, id_keep_merge_reg)
+rm(mi_sample_registros, data_registros_unicos)
 
-#data_per <- data_per[sample(1:nrow(data_per), mi_sample_registros, replace = FALSE), ]
-
-# Re escribo la base data_reg para solo conservar estos individuos.
-#data_sample <- data_per["id_persona"]
-#data_reg_2 <- inner_join(data_sample, data_reg, by = "id_persona")
-
-#assign("data_reg", data_reg_2, envir = .GlobalEnv)
-
-# rm(mi_sample_registros, data_sample, data_reg_2)
-
+# FIN #
 
 ## TEORIA DE SAMPLE: OJO CON LA REPOSICION DE LOS INDICES DEL DOMINIO!!!!!!!!
 ### FALSE ES SIN REPOSICION! LO QUE YO NECESITABA:
@@ -41,3 +30,4 @@ df_sample_true  <- data.frame(A=c(sample(1:20, 1000, replace = TRUE)))
 df_sample_true %>% group_by(A) %>% summarise(n = n()) %>% arrange(desc(n))
 
 rm(df_sample_true, df_sample_false)
+

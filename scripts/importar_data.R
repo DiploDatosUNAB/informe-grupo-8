@@ -20,7 +20,10 @@ data_registro <- readr::read_csv(file_path, n_max = mi_muestra_registros, show_c
 # Lo que no llegue a preveer era que no podria hacer un join sin tener que cargar la base completa previamente. 
 # Podria hacerlo para la siguiente entrega y de paso buscar como exportar el archivo csv de salida de las mismas bases data_per/reg para que siempre se utilice las mismas sin necesidad de volver a procesar el total de datos.
 
-print(paste("Reporte parcial: Se cargan:", scales::comma(mi_muestra_registros), "sobservaciones."))
+print(paste("Reporte, importar_data.R: esta muestra carga con", 
+            scales::comma(mi_muestra_registros), 
+            "observaciones."))
+
 #Reporte parcial: Se cargan `r nrow(data)` observaciones. 
 
 rm(file_path, mi_muestra_registros)

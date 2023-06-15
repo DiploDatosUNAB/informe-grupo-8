@@ -1,5 +1,5 @@
 # Finalmente creo que es mejor agrandar la base original con las variables de tiempo.
-data_reg <- data_reg %>% 
+data_registros_unicos <- data_registros_unicos %>% 
   mutate(anio = year(fecha_aplicacion),
          mes = month(fecha_aplicacion),
          semana = sprintf("%02d", week(fecha_aplicacion)),

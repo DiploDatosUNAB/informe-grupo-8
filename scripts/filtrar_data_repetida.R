@@ -1,18 +1,29 @@
 # Version actual: quita duplicados
 
+#source("scripts/filtrar_data_repetida.R")
+
 # Encontrar observaciones completamente unicas en el dataframe
 df_uni <- data_registro[!duplicated(data_registro), ]
 
 # Obtener las filas NO repetidas según las variables "id_persona_dw" y "fecha_aplicacion"
 
+## Critero de repetido perfecto (filas identicas - todas las variables)
 ## se repite la misma persona vacunandose el mismo dia mas de una vez:
 df_uni_igual_persona_fecha <- data_registro[duplicated(data_registro[c("id_persona_dw", "fecha_aplicacion")]), ]
 
+## Criterio de repetido imperfecto (filas casi iguales - se consideran 2 variables: fecha y persona)
 ## no se repite la misma persona con mas de una vacuna el mismo día:
 df_uni_disti_persona_fecha <- data_registro[!duplicated(data_registro[c("id_persona_dw", "fecha_aplicacion")]), ]
-data_reg <- df_uni_disti_persona_fecha
+data_registros_unicos <- df_uni_disti_persona_fecha
+
+print(paste("Reporte, filtrar_data_repetida.R: esta muestra tiene", 
+            scales::comma(nrow(data_registros_unicos)), 
+            "registros únicos."))
 
 rm(data_registro, df_uni_disti_persona_fecha, df_uni, df_uni_igual_persona_fecha)
+
+# FIN #
+
 ## Encontrar observaciones completamente iguales en el dataframe
 #df_rep <- data_registro[duplicated(data_registro) | duplicated(data_registro, fromLast = TRUE), ]
 

@@ -8,11 +8,8 @@ varstat <- "dosis"
 #fecha_limite <- "2022-12-30"
 #filter(fecha_aplicacion <= fecha_limite) 
 
-# Obtener los nombres de las columnas de tipo character
-varlist <- names(data_per)[sapply(data_per, is.character)]
-
 # Realizar el procesamiento para cada variable (se llama variables dinamica a la iterada)
-for (var in varlist) {
+for (var in varlist_char) {
   desctabla <- data_per %>%
     group_by(.data[[var]]) %>%
     summarise(min_dosis = min(orden_dosis),
@@ -59,7 +56,7 @@ for (var in varlist) {
 }
 
 
-rm(list = c("mas_abs", "mas_rel", "var", "desctabla", "textabla", "varlist", "varstat"))
+rm(list = c("mas_abs", "mas_rel", "var", "desctabla", "textabla", "varlist_char", "varstat"))
 #rm("fecha_corte", "fecha_i", "fecha_limite")
 
 #ls_genvar_estdesc

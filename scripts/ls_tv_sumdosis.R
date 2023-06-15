@@ -1,12 +1,12 @@
 # Armo una lista con agrupaciones por cantidad de aplicaciones por espacio temporal
 
-ls_timvar_sumdosis = list()
+ls_tv_sumdosis = list()
 
 sumdosis_varlist <- names(aplicaciones_diarias)[-c(1,2)]
 
 for (unidad_tiempo in sumdosis_varlist){
   
-  ls_timvar_sumdosis[[unidad_tiempo]] <- aplicaciones_diarias %>% 
+  ls_tv_sumdosis[[unidad_tiempo]] <- aplicaciones_diarias %>% 
     group_by_at(vars(one_of({{unidad_tiempo}}))) %>% 
     select(dosis, {{unidad_tiempo}}) %>% 
     summarise(suma_dosis = sum(dosis)) %>%
