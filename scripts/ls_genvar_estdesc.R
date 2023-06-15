@@ -95,4 +95,4 @@ for (esta_variable in varlist) {
   
 }
 
-rm("desctabla", "textabla")
+rm("desctabla", "textabla", "esta_variable", "varlist", "mas_abs")

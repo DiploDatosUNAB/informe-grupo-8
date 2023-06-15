@@ -1,0 +1,212 @@
+---
+title: "practica loops"
+author: "skb"
+date: "2023-06-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+rm(list=ls())
+library(tidyverse)
+```
+
+# Objetos environment
+```{r}
+lista <- list()
+df1 <- data.frame(sexo = c("f", "f", "m", "x", "m", "f"), edad = c(10, 15, 20, 25, 20, 18))
+varlist <- c("sexo", "edad")
+```
+
+# Almacenar tablas en lista
+```{r ls_lista}
+for (esta_variable in varlist) {
+  esta_tabla <- df1 %>% 
+    group_by(.data[[esta_variable]]) %>% 
+    summarise(n = n())
+
+  ## por qué acá solo me funciona el comando si ante escribo .data[[]]
+  ## aca me permite usar any_of? sí lo utilizo arriba me da error.
+
+  #Ahora si hacemos que este df1 se encuentre en una lista:
+  lista[[esta_variable]] <- esta_tabla 
+  
+  #Veamos la tabla:
+  print(esta_tabla)
+  
+}
+rm(esta_tabla, esta_variable)
+```
+respuesta Elio: group_by(.data[[esta_variable]]) %>% , asi como todo el paquete de dplyr (mutate, select, etc) éste precisa explicitamente que le mencione que esta_variable es una variable iterada y quiero que evalue su contenido dentro del pipe en este caso -df1- luego de reemplazar esta_variable por el valor iterado. Similar al concepto de macro `local_name' en stata.
+
+respuesta Elio: any_of | all_of son del paquete tidy-select que realiza la misma funcion que el de arriba. LAU: no entiendo entonces por que la diferencia que no puedo usar el mismo any_of en el group_by().
+
+lista[[sexo]] error.
+lista[["sexo"]] no error.
+diferencias entre el uso de un objeto y el llamar al objeto.
+
+## Presentacion tabla:
+```{r presentacion_tabla}
+for (esta_variable in varlist){
+  # Tabla presentación.
+  print_esto <- lista[[esta_variable]] %>% 
+  knitr::kable(caption = "Esta tabla", col.names = c("grupo", "obs."))
+  
+  # Guarde otro objeto para 
+  print(print_esto)
+}
+
+```
+Luego de la correccion (quitar comillas de lista[["x"]] y modificar el select para que el elemento df dentro de la lista tenga mas de una columna), ahora no da error, tampoco extrae la tabla kable. Es un paso mas. Pendiente.
+
+## Presentacion grafico:
+```{r presentacion_grafico}
+for (esta_variable in varlist){
+  # Grafico presentacion
+  k_este_grafico <- lista[[esta_variable]] %>% 
+    ggplot(aes(.data[[esta_variable]], n)) +
+    geom_col()
+  
+  print(k_este_grafico)
+  # el output queda en blanco. Sin error. No muestra output. 
+  # Si en lugar de iterar este loop aplico mismas funciones al parametro sexo y edad por separado, ahí sí me los grafica.
+}
+
+```
+Tampoco tira error como antes. Elio dice que no te tira error porque dentro de un loop el plot no se grafica y entonces no hace ningún cómputo. 
+
+Ademas ggplot2 tiene la misma complicación que dplyr y amigues (está buscando una columna llamada esta_variable). 
+
+Acá podés usar el pronombre .data igual que en group_by()
+lista[[esta_variable]] %>%
+    ggplot(aes(.data[[esta_variable]], n)) +
+    geom_col()
+
+pendiente, entonces como hago para graficar dentro de un loop? asumo que entonces sera en funciones que sí se pueden realizar.
+pendiente, la segunda variable del ggplot(aes(n)) tambien requiere del .data[[]] en caso de que se pudiera incluir en la funcion que si me haga graficos?
+
+# Funciones:
+
+## tabla_general
+```{r}
+tabla_general <- function(lista, elemento, variable) {
+  
+  k_esta_tabla <- lista[[elemento]] %>%
+    knitr::kable(caption = "Esta tabla",
+                 col.names = c("grupo", "obs."))
+  
+  return(k_esta_tabla)
+}
+```
+
+## grafico_estandar
+```{r}
+grafico_estandar <- function(lista, elemento, variable) {
+  
+k_este_grafico <- lista[[elemento]] %>% 
+  ggplot(aes(.data[[elemento]], n)) + 
+  geom_col()
+
+  return(k_este_grafico)
+}
+```
+
+# Validacion:
+
+## resultado escrito
+```{r}
+# Por ultimo, se esperaría que la siguiente tabla y gráfico sean igual a la llamada por función:
+
+lista[["sexo"]] %>% 
+  knitr::kable(caption = "Esta tabla", col.names = c("grupo", "obs."))
+
+lista[["sexo"]] %>% 
+  ggplot(aes(sexo, n)) +
+  geom_col()
+```
+
+## resultado funcion
+```{r}
+tabla_general(lista, "sexo")
+grafico_estandar(lista, "sexo")
+```
+
+
+# Respuesta Elio
+
+Te estás encontrando con unas de las limitaciones (o más bien complicaciones) de dplyr y sus paquetes amigos. Cuando hacés
+
+datos %>% group_by(grupo)
+
+(o cosas parecidas) yo simepre les dije que ahí la variable "grupo" se interpreta en el contexto de los datos. Esto es un comportamiento que ayuda a escribir el código muy consiso y legible, pero, ¿qué pasa si la variable por la que quiero agrupar es en sí misma variable? No puedo. Es decir, si yo quiero hacer algo como
+
+variable_a_agrupar <- "grupo"
+datos %>% group_by(variable_a_agrupar)
+
+la función group_by() va a tratar de buscar la columna "variable_a_agrupar" en datos. Lo mismo pasa con todas las funciones de dplyr como mutate(), select(), etc...
+
+Para poder usar dplyr en estos casos, el paquete viene con una serie de herramientas que fueron evolucionando durante los años.
+
+Una es el "pronombre" ".data" para referirse explícitamente a los datos. Entonces
+
+datos %>% group_by(.data[[variable_a_agrupar]])
+
+lo que hace es explícitamente buscar la columna con el nombre que está guardado en la variable variable_a_agrupar.
+
+Otra herramienta son las funciones de "tidy select", como any_of(). Entonces
+
+variables_a_seleccionar <- c("variable1", "variable2")
+
+datos %>% select(all_of(variables_a_seleccionar))
+
+seleciona las columnas de datos cuyos nombres están en la variable variables_a_seleccionar.
+
+ALgunas cosas del código:
+
+    summarise(n = n()) %>%
+    print(select(any_of(esta_variable)))
+
+Acá esto no anda porque estás anidando la función print(). Recordando que la pipe lo que hace es pasar el resultado de lo anterior como primer argumento a la función, esta cadena es equivalente a esto:
+
+datos <- datos %>% summarise(n = n())
+print(datos, select(any_of(esta_variable)))
+
+Donde el select() no se aplica a ninguna tabla. Probablemente quieras hacer esto:
+
+esta_tabla <- df1 %>%
+    group_by(.data[[esta_variable]]) %>%
+    summarise(n = n()) %>%
+    select(any_of(esta_variable))
+
+print(esta_tabla)
+
+
+Luego acá:
+
+lista[["esta_variable"]]
+
+estás tratando de seleccionar el elemento de la lista llamado "esta_variable". Para seleccionar el elemento de la lista cuyo nombre es el valor de esta_variable tenés que hacer
+
+lista[[esta_variable]]
+
+(como más arriba cuando asignás).
+
+El kable no anda porque el resultado de lo anterior tiene una única columna (por el select(any_of(esta_variable))).
+
+Acá:
+
+for (esta_variable in varlist){  
+    lista[["esta_variable"]] %>%
+        ggplot(aes(esta_variable, n)) +
+        geom_col()
+}
+
+Esto no te tira error porque dentro de un loop el plot no se grafica y entonces no hace ningún cómputo. Acá está mismo problema de arriba (lista[[esta_variable]]) y además que ggplot2 tiene la misma complicación que dplyr y amigues (está buscando una columna llamada esta_variable)). Acá podés usar el pronombre .data igual que en group_by()
+
+lista[[esta_variable]] %>%
+    ggplot(aes(.data[[esta_variable]], n)) +
+    geom_col()
+
+Una forma antigua de hacerlo es con una serie de funciones alternativas: aes_() aes_string() y aes_q() que tenían distintos usos y distinta sintaxis. No es recomendable usarlas ahora pero lo comento por si se encuentran con ejemplos que usen esas funciones. 

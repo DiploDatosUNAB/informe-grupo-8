@@ -1,31 +1,28 @@
-Cada "name" es un tema a modificar pendiente.
-Cada "name_realizado" es un punto mejorado satisfactoriamente.
-Cada "name_consultar" es un tema atendido sin respuesta.
 
 "moderate data"
-Un paquete que se más eficiente en cuanto a memoria es data.table. La sintaxis es muy distinta a dplyr, pero hay un paquete que extiende dplyr para usar la sintaxis de dplyr pero con el "backend" de data.table: dtplyr.
-Si los datos no entran en memoria, ya hay que ir a otras herramientas, como el paquete arrow, pero eso quizás es para la materia de big data.
+Un paquete que se más eficiente en cuanto a memoria es data.table. La sintaxis es muy distinta a dplyr, pero hay un paquete que extiende dplyr para usar la sintaxis de dplyr pero con el "backend" de data.table: dtplyr. Si los datos no entran en memoria, ya hay que ir a otras herramientas, como el paquete arrow, pero eso quizás es para la materia de big data.
 
+*linea 505, los graficos apilados..
+o una linea para cada día, 
+o unas barras que sean dia de semana (dividido 5) y fines de semana (dividido 2).
 
+* 746
+Para esto podés explorar ggupset para graficar este tipo de datos de pertenencia a conjuntos e intersecciones
+
+OBSERVADO!
 Nuevas propuestas:
 te recomiendo que pispees el paquete targets, 
 que te permite armar toda una estructura muy clara de los pasos a seguir en el proceso de los datos:
 https://books.ropensci.org/targets/
+OBSERVADO!
 
-
-
-*linea 505, los graficos apilados..
-
-o una linea para cada día, 
-
-o unas barras que sean dia de semana (dividido 5) y fines de semana (dividido 2).
-
-* 683, join pipeline.
+MODIFICADO! * 683, join pipeline.
 Esto podés hacerlo con la pipe. Queda más limpio y se entiende mejor la intención.
 jurisdicciones_poblacion <- jurisdicciones_poblacion |> 
   full_join(jresidentes, by = "jurisdiccion") |> 
   full_join(jnoresidentes, by = "jurisdiccion") |> 
   full_join(jno_residentes, by = "jurisdiccion")
 
-* 726, sin leyenda que resulta redundante.
+MODIFICADO! * 726, sin leyenda que resulta redundante.
 Podés quitarla con guides(fill = "none").
+
