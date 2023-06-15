@@ -68,98 +68,93 @@ source("scripts/varlists_values.R")
 
 ## Generación de objetos del environment
 
-### ls_ed_df
+### ls_ed_df (son ultima foto)
 source("scripts/ls_estadesc1.R")
 source("scripts/ls_estadesc2.R")
 
-### ls_tv_sumdosis
+### ls_tv_sumdosis (variables del registro - no es ultima foto)
 source("scripts/df_aplicaciones_diarias.R")
 source("scripts/ls_tv_sumdosis.R")
 
 ## este puede generalizarse no solo para sexo y mejorar que las barras con fill sean apiladas
 source("scripts/ls_prop_sexo_dosis.R")
 
-source("scripts/df_piramide_poblacional.R")
-source("scripts/df_datos_espaciales.R")
+## Cruce de variables
 
-## Funciones para estadisticos de tabla general y grafico estandar
+### producto: gh_pira_pobla
+source("scripts/df_piramide_poblacional.R") ## buen ejercicio.
+
+### producto: k_jurisdicciones_poblacion
+source("scripts/df_jurisdicciones_poblacion.R")
+
+### ls_gvar_gvar es cruce de variables
+#source("scripts/ls_gvar_gvar.R") # puede mantenerse algo asi o la funcion
+
+## Funciones
+
+### Estadísticos de tabla general
 source("functions/tabla_general.R")
+
+### Gráfico estándar
 source("functions/grafico_estandar.R")
+source("functions/grafico_estandar_if.R")
+
+### Cruzar variables
+source("functions/cruzar_vars.R")
+
+#tabla_general(ls_ed_df, "sexo")
+#grafico_estandar(ls_ed_df, "sexo", "mean_dosis")
+#cruzar_vars("data_per", "sexo", "grupo_etario")
 ```
 
-# Variables estaticas
+# Hipótesis
+
+:::{.alert .alert-info}
+
+Aquí se presentan las hipótesis más jugosas que apuntan a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
+
+En esta sección se detallan las hipótesis programadas para guiar la exploración mas profunda del trabajo.
+
+Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la población objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la población se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad y tener complicaciones, por otro lado con la restriccion de la poblacion atendible en cada zona geografica y la capacidad hospitalaria instalada.
+
+1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. Para este apartado se dividirá el periodo analizado en 3 segmentos:
+
+* la escasez de vacunas disponibles (2021)
+* la abundacia de vacunas (2022 a junio 2022)
+* el declive de la demanda de vacunas (julio 2022 al presente)
+
+
+2. Como segundo criterio ordenador de la estrategia de vacunacion se priorizó las personas que habitan grandes ciudades por la restricción espacial, poca distancia social inevitable y de habitat sobrepoblado, en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales, en donde `depto_residencia` sean mas numerosos agrupados contra los menos numerosos.
+
+1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones y en mayor cantidad (tendencia). Se obtendrán días de descanso entre dosis que tiene en promedio cada poblacion mediante la fecha de aplicacion de cada registro para cada persona. Para lograr esto sería deseable trabajar con toda la base en lugar de un recorte que permita alimentar mas el estadístico. Se calculará la cantidad de dias promedio que pasan entre una dosis y otra: dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99 promedio para cada grupo.
+
+1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
+
+1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Se creará a este efecto un cruce de jurisdicciones y un relevamiento de que jurisdicciones se hicieron cargo de su poblacion residente y cuales colaboraron con la vacunación de no residentes.
+
+1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunación libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion. Se observará el comportamiento de estos grupos: 
+
+* "individuos menores de 30 años sin factores de riesgo" vs 
+* "individuos mayores a 30 y menores de 60 años sin factores de riesgo" vs 
+* "mayores de 60 años sin factores de riesgo y espero que sea posible llegar a los 60 sin esos". 
+
+:::
+
+# Variables estáticas (última actualización de la cohorte)
+
 ## Variable `condicion_aplicacion`
 ```{r condicion_aplicacion_general, include=TRUE}
-ls_genvar_estdesc$condicion_aplicacion
-tabla_general(ls_genvar_estdesc, "condicion_aplicacion")
-grafico_estandar(ls_genvar_estdesc, "condicion_aplicacion", "mean_dosis")
-```
-
-esta_variable <- "condicion_aplicacion"
-total_dosis <- "total_dosis"
-mas_abs <- paste0(esta_variable,".1") o "mas_abs"
-mas_rel <- paste0(esta_variable,".2") o "mas_rel"
-mean_dosis <- "mean_dosis"
-
-1. La población que mas rebició vacunas en valor absoluto es: 
-`r ls_genvar_texto[[esta_variable]][mas_abs]` con 
-`r scales::comma(max(ls_genvar_estdesc[[esta_variable]][total_dosis]))` 
-dosis aplicadas sobre este grupo.
-
-1. La población que mas rebició vacunas en valor relativo es: 
-`r ls_genvar_texto[[esta_variable]][mas_rel]` con 
-`r round(max(ls_genvar_estdesc[[esta_variable]][mean_dosis]),2)`
-dosis promedio aplicadas sobre este grupo.
-
-```{r gh_est_cond_aplic, fig.show='hold', message=FALSE, out.width="50%"}
-
-ls_genvar_estdesc$condicion_aplicacion %>% 
-  ggplot(mapping = aes(condicion_aplicacion, total_dosis)) +
-  geom_col(fill="chocolate") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis totales destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","total_dosis", ".png"))
-
-ls_genvar_estdesc$condicion_aplicacion %>% 
-  ggplot(mapping = aes(condicion_aplicacion, mean_dosis)) +
-  geom_col(fill="steelblue") +
-  theme_classic() +
-  labs(title = "Cantidad de dosis promedio destinadas a cada agrupamiento")
-
-ggsave(paste0("png/grafico_estandar_","condicion_aplicacion", "_","mean_dosis", ".png"))
-```
-
-## Caracterizacion de la poblacion
-Piramide problacional por `sexo` y `grupo_etario`.
-```{r piramide_poblacional, message=FALSE}
-
-source("scripts/df_piramide_poblacional.R")
-
-# Gran grafico piramide poblacional de Gizha.
-df_piramide_poblacional %>% 
-  ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
-  geom_col() +
-  scale_x_continuous(breaks = pop_range_breaks,
-                     labels = scales::comma(abs(pop_range_breaks))) +
-  labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>") +
-  xlab(label = "Poblacion") +
-  ylab(label = "Grupo etario") +
-  theme(legend.position = "right") + ## ubicar la leyenda
-  theme_classic() ## 
-ggsave(paste0("png/piramide_poblacional_","sexo_grupo_etario", ".png"))
-
+tabla_general(ls_ed_df, "condicion_aplicacion")
+grafico_estandar(ls_ed_df, "condicion_aplicacion", "total_dosis")
+grafico_estandar(ls_ed_df, "condicion_aplicacion", "mean_dosis")
+grafico_estandar(ls_ed_df, "condicion_aplicacion", "max_dosis")
+grafico_estandar(ls_ed_df, "condicion_aplicacion", "min_dosis")
+ls_ed_df$condicion_aplicacion
 ```
 
 
+# Variables dinámicas (todo el registro de la cohorte)
 :::{.alert .alert.info}
-
-En esta sección se presentan análisis dinámicos de la evolución de los datos y estadísticas en un intervalo temporal.
-
-* Aplicaciones por diferentes aproximaciones de unidad temporal y por etapas del plan de vacunación.
-* Días populares para vacunarse. `ls_timvar_sumdosis[["dia"]]`.
-* Días de descanso entre dosis (tiempo promedio). *Pendiente*
-
 :::
 
 ```{r}
@@ -170,13 +165,12 @@ x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "se
 ## Dosis x día de la semana
 ```{r gh_ls_timvar_dia, message=FALSE}
 ## Grafico dosis x dia
-ls_timvar_sumdosis[["dia"]] %>% 
+ls_tv_sumdosis[["dia"]] %>% 
   ggplot(aes(x = dia, y = suma_dosis)) +
   geom_col(fill = "lightcoral") +
   labs(title = "Dosis aplicadas para cada día") +
   xlab(label = "Días") +
   ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
   theme_classic() ## 
 ggsave(paste0("png/ls_timvar_","dia", ".png"))
 ```
@@ -186,17 +180,16 @@ ggsave(paste0("png/ls_timvar_","dia", ".png"))
 # Luego de explorar posibles graficos, me resulta interesante que se vea el año que mas peso tiene en las vacunaciones, y partir de lo general ir a lo particular, de lo macro a lo micro. Vamos a hacer zoom en cada periodo temporal y explicar como parece que se comporta la campaña de vacunacion y la poblacion.
 
 ## Grafico dosis x anio
-ls_timvar_sumdosis[["anio"]] %>% 
+ls_tv_sumdosis[["anio"]] %>% 
   ggplot(aes(x = anio, y = suma_dosis)) +
   geom_col(fill = "steelblue") +
   labs(title = "Dosis aplicadas para cada año") +
   xlab(label = "Año") +
   ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
   theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","anio", ".png"))
+#ggsave(paste0("png/ls_timvar_","anio", ".png"))
 ## Es enorme la diferencia entre la vacunacion del anio con mas peso, el 2022, comparado con los otros 2 años disponibles.
-ls_timvar_sumdosis[["anio"]]
+ls_tv_sumdosis[["anio"]]
 ```
 
 ## Dosis x mes del año con mas vacunación
@@ -442,38 +435,18 @@ De la tabla, dificil de inteligir, se extrae qué porcentaje de cada grupo se en
 
 Cuanto más alto el nivel de `Freq_rel_acum_sexo` vs el `otro`, el mas alto tiene mayor proporción del grupo_sexo inmunizado a un menor nivel de cobertura.
 
-# Hipótesis
-
-:::{.alert .alert-info}
-
-Aquí se presentan las hipótesis más jugosas que apuntan a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
-
-En esta sección se detallan las hipotesis programadas para guiar la exploración mas profunda del trabajo.
-
-Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la poblacion objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la poblacion se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad y tener complicaciones, por otro lado con la restriccion de la poblacion atendible en cada zona geografica y la capacidad hospitalaria instalada.
-
-1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. Para este apartado se dividirá el periodo analizado en 3 segmentos:
-
-* la escasez de vacunas disponibles (2021)
-* la abundacia de vacunas (2022 a junio 2022)
-* el declive de la demanda de vacunas (julio 2022 al presente)
 
 
-2. Como segundo criterio ordenador de la estrategia de vacunacion se priorizó las personas que habitan grandes ciudades por la restricción espacial, poca distancia social inevitable y de habitat sobrepoblado, en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales, en donde `depto_residencia` sean mas numerosos agrupados contra los menos numerosos.
 
-1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones y en mayor cantidad (tendencia). Se obtendrán días de descanso entre dosis que tiene en promedio cada poblacion mediante la fecha de aplicacion de cada registro para cada persona. Para lograr esto sería deseable trabajar con toda la base en lugar de un recorte que permita alimentar mas el estadístico. Se calculará la cantidad de dias promedio que pasan entre una dosis y otra: dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99 promedio para cada grupo.
 
-1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
 
-1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Se creará a este efecto un cruce de jurisdicciones y un relevamiento de que jurisdicciones se hicieron cargo de su poblacion residente y cuales colaboraron con la vacunación de no residentes.
 
-1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunación libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion. Se observará el comportamiento de estos grupos: 
 
-* "individuos menores de 30 años sin factores de riesgo" vs 
-* "individuos mayores a 30 y menores de 60 años sin factores de riesgo" vs 
-* "mayores de 60 años sin factores de riesgo y espero que sea posible llegar a los 60 sin esos". 
 
-:::
+
+
+
+
 
 # Mejoras posibles
 

@@ -15,3 +15,13 @@ for (unidad_tiempo in sumdosis_varlist){
 }
 
 rm(sumdosis_varlist, unidad_tiempo)
+
+
+ls_tv_sumdosis[["aplicaciones_diarias"]] <- aplicaciones_diarias %>% 
+  mutate(prop = dosis / sum(dosis)) %>% 
+  select(fecha_aplicacion, dosis, prop) %>% 
+  arrange(fecha_aplicacion)
+
+ls_tv_sumdosis[["aplicaciones_diarias_wide"]] <- aplicaciones_diarias
+
+rm(aplicaciones_diarias)  
