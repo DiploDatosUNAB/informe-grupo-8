@@ -82,10 +82,10 @@ source("scripts/ls_prop_sexo_dosis.R")
 ## Cruce de variables
 
 ### producto: gh_pira_pobla
-source("scripts/df_piramide_poblacional.R") ## buen ejercicio.
+#source("scripts/df_piramide_poblacional.R") ## buen ejercicio.
 
 ### producto: k_jurisdicciones_poblacion
-source("scripts/df_jurisdicciones_poblacion.R")
+#source("scripts/df_jurisdicciones_poblacion.R")
 
 ### ls_gvar_gvar es cruce de variables
 #source("scripts/ls_gvar_gvar.R") # puede mantenerse algo asi o la funcion
@@ -97,7 +97,6 @@ source("functions/tabla_general.R")
 
 ### Gráfico estándar
 source("functions/grafico_estandar.R")
-source("functions/grafico_estandar_if.R")
 
 ### Cruzar variables
 source("functions/cruzar_vars.R")
@@ -109,188 +108,278 @@ source("functions/cruzar_vars.R")
 
 # Hipótesis
 
+```{r lista_resultados}
+ls_k <- list()
+#ls: lista
+#k: resultados
+#h1: hipotesis 1
+#df: dataframe
+#dfk: dataframe::knitr
+#gh: gráfico
+#reg/per: scope de la base (reg-istros / per-sonas)
+```
+
 :::{.alert .alert-info}
 
 Aquí se presentan las hipótesis más jugosas que apuntan a la relación entre varias variables y a un fenómeno subyacente que puede tener implicancia y aplicaciones.
 
 En esta sección se detallan las hipótesis programadas para guiar la exploración mas profunda del trabajo.
 
-Debido a la disponibilidad gradual de dosis de vacunas al comienzo de la pandemia resulta necesario establecer una priorización y ordenamiento de la población objetivo a inmunizar en las primeras rondas con la finalidad de salvaguardar aquellos mas susceptibles, expuestos, vulnerables o de alto riesgo. Para maximizar el cuidado general de la población se cree que mayores de edad, personas con comorbilidades y personal estrategico fueron los priorizados del sistema, teniendo en cuenta que el orden de priorizacion basal es evitar la muerte seguido de evitar enfermar con gravedad y tener complicaciones, por otro lado con la restriccion de la poblacion atendible en cada zona geografica y la capacidad hospitalaria instalada.
-
-1. Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. Para este apartado se dividirá el periodo analizado en 3 segmentos:
-
-* la escasez de vacunas disponibles (2021)
-* la abundacia de vacunas (2022 a junio 2022)
-* el declive de la demanda de vacunas (julio 2022 al presente)
-
-
-2. Como segundo criterio ordenador de la estrategia de vacunacion se priorizó las personas que habitan grandes ciudades por la restricción espacial, poca distancia social inevitable y de habitat sobrepoblado, en condiciones de alta densidad demografica. Se puede analizar por departamentos provinciales, en donde `depto_residencia` sean mas numerosos agrupados contra los menos numerosos.
-
-1. Se cree que la poblacion priorizada obtuvo sus dosis de forma mas frecuente que otras poblaciones y en mayor cantidad (tendencia). Se obtendrán días de descanso entre dosis que tiene en promedio cada poblacion mediante la fecha de aplicacion de cada registro para cada persona. Para lograr esto sería deseable trabajar con toda la base en lugar de un recorte que permita alimentar mas el estadístico. Se calculará la cantidad de dias promedio que pasan entre una dosis y otra: dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac99 promedio para cada grupo.
-
-1. Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. Veremos cuando se registraron picos de vacunacion que permitieron una mayor circulacion libre e irrestricta.
-
-1. Se desea conocer alguna relacion que pueda observarse a traves de los registros sobre jurisdiccion de residencia y de aplicacion. Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Se creará a este efecto un cruce de jurisdicciones y un relevamiento de que jurisdicciones se hicieron cargo de su poblacion residente y cuales colaboraron con la vacunación de no residentes.
-
-1. Los mas jovenes registraron menor adherencia a los esquemas de vacunacion que los adultos para todo el periodo en que la disponibilidad es de vacunación libre sin requisito de etapas. Se cree que los jovenes no confian en la nueva tecnologia de inmunizacion. Se observará el comportamiento de estos grupos: 
-
-* "individuos menores de 30 años sin factores de riesgo" vs 
-* "individuos mayores a 30 y menores de 60 años sin factores de riesgo" vs 
-* "mayores de 60 años sin factores de riesgo y espero que sea posible llegar a los 60 sin esos". 
-
 :::
 
-# Variables estáticas (última actualización de la cohorte)
+## 1. Hipótesis: Foco de vacunación - Condición de vulnerabilidad
+Direccionamiento de las primeras dosis: La escasa disponibilidad de vacunas al comienzo de la pandemia forzó a las autoridades de salud pública a ordenar, priorizar y restringir la entrega de vacunas, dirigiendo las primeras etapas y rondas a las personas mas susceptibles, expuestas, vulnerables o de alto riesgo.
 
-## Variable `condicion_aplicacion`
-```{r condicion_aplicacion_general, include=TRUE}
-tabla_general(ls_ed_df, "condicion_aplicacion")
-grafico_estandar(ls_ed_df, "condicion_aplicacion", "total_dosis")
-grafico_estandar(ls_ed_df, "condicion_aplicacion", "mean_dosis")
-grafico_estandar(ls_ed_df, "condicion_aplicacion", "max_dosis")
-grafico_estandar(ls_ed_df, "condicion_aplicacion", "min_dosis")
-ls_ed_df$condicion_aplicacion
+Para maximizar el cuidado general de la población se espraría que mayores de edad, personas con comorbilidades y personal estrategico fueron priorizados por el sistema, teniendo en cuenta que el criterio de priorización es evitar la muerte, seguido de evitar enfermar con gravedad y tener complicaciones.
+
+Por esta razón se indagará en las etapas tempranas de vacunacion la incidencia de la poblacion objetivo sobre el total y comparar esos valores con los registrados al finalizar la emergencia mundial cuando la vacuna alcanzo la suficiencia en disponibilidad irrestricta. Para este apartado se dividirá el periodo analizado en 3 segmentos:
+
+Tendencias de vacunación, intervalo temporal de los períodos seleccionados (subgrupos)
+* Periodo marcado por la escasez de vacunas (2021)
+* Periodo de abundancia de vacunas (2022 a junio 2022)
+* Periodo del declive de la demanda de vacunas (julio 2022 al presente)
+
+**Corren 2 scripts:**
+* Haciendo uso de `fecha_aplicacion`: agrega var periodo {son 3 etapas}
+* Haciendo uso de `CONDICION_APLICACION` et `GRUPO_ETARIO`: agrega var cond_grupo {son 3 criterios}
+
+```{r hip_periodo, message=FALSE}
+## Haciendo uso de `fecha_aplicacion`: agrega var periodo {son 3 etapas}
+source("scripts/agregar_var_periodo.R")
+## Haciendo uso de `CONDICION_APLICACION` et `GRUPO_ETARIO`: agrega var cond_grupo {son 3 criterios}
+source("scripts/agregar_var_cond_grupo.R")
+```
+```{r ls_k_hip1}
+
+# H1: dataframe de registros 
+ls_k[["h1_df_reg"]] <- data_reg %>% 
+  filter(cond_grupo != "Estratégico") %>% 
+  group_by(periodo, cond_grupo) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n / sum(n) * 100) %>% 
+  arrange(cond_grupo, periodo)
+
+ls_k[["h1_dfk_reg"]] <- ls_k[["h1_df_reg"]] %>% knitr::kable(caption = "Participación de la población vacunada en cada período según vulnerabilidad", col.names = c("Período", "Condición", "Vacunaciones", "Proporción (período)"))
+
+## Guardar grafico tendencia de la participacion en los periodos segun vulnerabilidad
+ls_k[["h1_gh_reg"]] <- ls_k[["h1_df_reg"]] %>% 
+  ggplot(aes(periodo, prop, fill = cond_grupo)) +
+  geom_col(position = position_dodge(width = 0.95)) +
+  geom_text(aes(label = round(prop, 1)), vjust = -0.3, position = position_dodge(width = 0.9)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5), legend.position = "right") +
+  labs(title = "Participación de la población vacunada en cada período",
+       subtitle = "Grupo según condición de vulnerabilidad",
+       x = "Período",
+       y = "Proporción",
+       fill = "Condición")
+
+# df identico salvo: data_reg -> data_per, es sin ponderacion.
+ls_k[["h1_df_per"]] <- data_reg %>%
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  filter(cond_grupo != "Estratégico") %>% 
+  group_by(periodo, cond_grupo) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n / sum(n) * 100) %>% 
+  arrange(cond_grupo, periodo) 
+
+# unir ambos df. reg y per.
+# muestra composicion de la poblacion y distribucion de vacunas en ella. 
+ls_k[["h1_df_reg_per"]] <- ls_k[["h1_df_reg"]] %>% 
+  left_join(ls_k[["h1_df_per"]], join_by(periodo, cond_grupo), suffix = c(x="_reg", y="_per")) %>% 
+  select(periodo, cond_grupo, prop_reg, prop_per)
+
+ls_k[["h1_dfk_reg_per"]] <- ls_k[["h1_df_reg_per"]] %>% knitr::kable(caption = "Participación de la población vacunada en cada período según vulnerabilidad", col.names = c("Período", "Condición", "Proporción (período, reg)", "Proporción (período, per)"))
+
+## espacio_1
+
+###ls_k[["h1_df_reg"]]
+###ls_k[["h1_dfk_reg"]]
+###ls_k[["h1_df_per"]]
+###ls_k[["h1_df_reg_per"]]
+# con los descomentados anteriores escribir la conclusion.
+
+ls_k[["h1_df_per_prop"]] <- data_reg %>%
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  filter(cond_grupo != "Estratégico") %>% 
+  group_by(cond_grupo) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n / sum(n) * 100) 
+
+ls_k[["h1_df_per_ordendosis"]] <- data_reg %>%
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  filter(cond_grupo != "Estratégico") %>% 
+  group_by(orden_dosis, cond_grupo) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n / sum(n) * 100) %>% 
+  ggplot(aes(orden_dosis, prop, fill = cond_grupo)) +
+  geom_col() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0), legend.position = "right") +
+  labs(title = "Participación de la población vacunada por nivel de inmunización",
+       subtitle = "Grupo según condición de vulnerabilidad",
+       x = "Dosis acumuladas",
+       y = "Proporción",
+       fill = "Condición")
+
+ls_k[["h1_dfk_per_prop"]] <- ls_k[["h1_df_per_prop"]] %>% knitr::kable(caption = "Participación de la población según vulnerabilidad", col.names = c("Condición", "Población", "Participación"))
+
+```
+Se presenta en el apartado de la hipótesis N°1 el resultado de manipular las variables de `grupo_etario` y `condicion_aplicacion` con la finalidad de agrupar los conjuntos entre "No vulnerable" y "Vulnerable". 
+
+Se dejó fuera del análisis el grupo correspondiente a personal "Estratégico", por la positiva, se analizan los grupos que pueden afectarse mas precisamente a la condición de vulnerabilidad. 
+
+Se contrastan las proporciones que ocupan las vacunaciones destinadas a ambos grupos en cada uno de los períodos definidos anteriormente y se concluye que en contra de lo anunciado y lo previsto el grupo "No vulnerable" recibió más vacunaciones que el grupo "Vulnerable" en todos los períodos. La evolución a lo largo de los periodos fue progresiva en el sentido que los "Vulnerables" cobraron mayor peso en t=2 y t=3. 
+```{r}
+ls_k[["h1_gh_reg"]]
+```
+Hay que tener en cuenta que existen mas personas "No vulnerables" que "Vulnerables" (r ls_k[["h1_df_per_prop"]]["prop"]) y se observa que la tendencia general del gráfico apunta con el correr de los períodos que cada grupo obtiene la cantidad de vacunaciones que le corresponde por su peso proporcional en la población.
+```{r}
+ls_k[["h1_dfk_per_prop"]]
+```
+Por último, se puede comparar el peso de la población vacunada de cada grupo por período contra la misma población no ponderada, es decir, considerando los individuos y no la vacunación de los mismos. A través de esta línea de análisis se puede interpretar los resultados anteriores en el marco de la participación de cada grupo en el total de individuos y total de vacunaciones.
+
+* En el primer período: los "vulnerables" recibieron vacunas levemente por debajo de la proporción que les correspondería poblacionalmente. 
+* En el segundo período: los "vulnerables" recibieron vacunas un poco más que levemente por encima de la proporción que les correspondería poblacionalmente.
+* En el tercer período: los "vulnerables" vuelven a registrar vacunaciones levemente por debajo de la proporción que les corresponde poblacionalmente.
+
+*la tabla se interpreta: reg es registro y per es persona, registros de vacunas y personas es la parte poblacional, para cada período.*
+```{r}
+ls_k[["h1_dfk_reg_per"]] 
+```
+
+La yapita: a continuación se presenta un gráfico con el resultado final de la dinámica que venimos describiendo. Es una forma de dar cierre a la hipótesis 1 y concluir con el nivel de inmunización alcanzado para cada grupo y cómo se reparte la cantidad de personas según cuantas vacunas se aplicaron, básicamente la foto final de la historia recién contada y que no se explica en este trabajo sino que da para mayor análisis en otro. Se observa que son mas las personas "vulnerables" que se aplicaron niveles intermedios de inmunización, mientras que "no vulnerables" tienen mayor participación en otros niveles.  
+```{r}
+ls_k[["h1_df_per_ordendosis"]]
+```
+
+## X. Hipótesis. Migraciones.
+Migración de sujetos entre su residencia y su lugar de aplicación. Se realiza el análisis estático del mismo, solo último registro por persona. El análisis adquiere más sentido si se elimina el factor de multiplicación de la cantidad de registros.
+
+Por jurisdicción: 
+  *personas residentes-de-jur, 
+  *personas residentes-de-jur-aplicadas-en-jur,
+  *personas residentes-de-jur-aplicadas-en-otra-jur,
+  *personas aplicadas-en-jur, 
+  *personas no-residentes-de-jur-aplicadas-en-jur
+  *personas no-residentes-de-jur-aplicadas-en-jur (+/-),
+  
+Posiblemente existio una migracion de poblaciones debido al ASPO que puede observarse mediante este cruce o simplemente pueda obtenerse una "foto" de como las personas se mueven de su residencia hasta la aplicacion. Se creará a este efecto un cruce de jurisdicciones y un relevamiento de que jurisdicciones se hicieron cargo de su poblacion residente y cuales colaboraron con la vacunación de no residentes.
+
+**Se corre un script**
+Crear tabla jurisdicciones origen - destino.
+```{r}
+source("scripts/df_jurisdicciones_poblacion.R")
+#source("scripts/df_jurisdicciones_poblacion2.R") VER! PENDIENTES
+k_jurisdicciones_poblacion
 ```
 
 
-# Variables dinámicas (todo el registro de la cohorte)
-:::{.alert .alert.info}
-:::
+## X. H. Flex ASPO y aplicaciones diarias.
+Se comenzó a flexibilizar la ASPO (AISLAMIENTO SOCIAL PREVENTIVO Y OBLIGATORIO) desde la gran disponibilidad de vacunas a partir del 2022. Veremos cuando se registraron picos de vacunación que permitieron una mayor circulación libre e irrestricta para todos. 
+
+Se buscará encontrar patrones de visita al vacunatorio, si la vacunación tiende a ser mas frecuente un día de la semana particular, o no existe correlación. 
+
+## X. Hipótesis. Culturales. Jovenes. Adherencia. Piramide.
+Los mas jóvenes y la adherencia: sea por el motivo que fuere los jóvenes son rebeldes y perciben que cosas malas no les puede suceder. Esa conducta y pensamiento puede llevarlos a no aceptar la aplicación de vacunas, desconfiar de ellas y saltarse los esquemas o plataformas iniciados, reduciendo la tasa de inmunización global de la población. Para cada grupo etario se obtendrá un porcentaje de personas cubiertas por una, dos, ... más vacunas. Se considera a tales efectos el seguimiento de los jóvenes digamos con años entre 18 y 29 años.
+
+Armar grupo jovenes y pasarlo a un script
+```{r grupo_etario_jovenes}
+
+#VAMOS A UTILIZAR UNICAMENTE PERSONAS NO VULNERABLES PARA ASI ENTENDER QUE HACEN LAS PERSONAS CUANDO NO TIENEN UNA VULNERABILIDAD OBVIA Y CLASIFICADA SEGUN SI SON JOVENES O NO.
+
+pob_novulnerable <- data_reg %>% 
+  subset(cond_grupo == "No vulnerable") 
+
+pob_novulnerable %>% 
+  mutate(edad_proxy = as.numeric(substr(grupo_etario, 
+                                                nchar(grupo_etario) - 2,
+                                                nchar(grupo_etario))),
+         jovenes = ifelse(grupo_etario_proxy < 30, 
+                          "joven", 
+                          "adulto")) %>% 
+  select(grupo_etario, 
+         grupo_etario_proxy, 
+         jovenes)
+
+table(data_reg$grupo_etario, data_reg$sexo)
+
+```
+
+### Piramide poblacional
+
+**Corre un script** 
+Crear la piramide poblacional
+Veamos cómo se construye nuestra piramide poblacional según `sexo` y `grupo_etario`. El grupo de jóvenes de 18 a 29 son los grupos más numerosos para ambos sexos.
 
 ```{r}
-x_range_mes <- seq(1:12)
-x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+source("scripts/df_piramide_poblacional.R") 
+ls_k[["h_gh_pira_pobla"]] <- gh_pira_pobla
+rm(gh_pira_pobla)
 ```
 
-## Dosis x día de la semana
-```{r gh_ls_timvar_dia, message=FALSE}
-## Grafico dosis x dia
-ls_tv_sumdosis[["dia"]] %>% 
-  ggplot(aes(x = dia, y = suma_dosis)) +
-  geom_col(fill = "lightcoral") +
-  labs(title = "Dosis aplicadas para cada día") +
-  xlab(label = "Días") +
-  ylab(label = "Dosis") +
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","dia", ".png"))
-```
+### Niveles de inmunizacion por sexo
 
-## Dosis x año
-```{r gh_ls_timvar_anio, message=FALSE}
-# Luego de explorar posibles graficos, me resulta interesante que se vea el año que mas peso tiene en las vacunaciones, y partir de lo general ir a lo particular, de lo macro a lo micro. Vamos a hacer zoom en cada periodo temporal y explicar como parece que se comporta la campaña de vacunacion y la poblacion.
+```{r ls_prop_sexo_dosis, message=FALSE}
 
-## Grafico dosis x anio
-ls_tv_sumdosis[["anio"]] %>% 
-  ggplot(aes(x = anio, y = suma_dosis)) +
-  geom_col(fill = "steelblue") +
-  labs(title = "Dosis aplicadas para cada año") +
-  xlab(label = "Año") +
-  ylab(label = "Dosis") +
-  theme_classic() ## 
-#ggsave(paste0("png/ls_timvar_","anio", ".png"))
-## Es enorme la diferencia entre la vacunacion del anio con mas peso, el 2022, comparado con los otros 2 años disponibles.
-ls_tv_sumdosis[["anio"]]
-```
+source("scripts/ls_prop_sexo_dosis.R")
 
-## Dosis x mes del año con mas vacunación
-```{r gh_ls_timvar_meses_2022, message=FALSE}
-# Nos adentramos entonces en el anio con mayor vacunacion para ver como se ejecuto a lo largo de los meses.
+#este R me gustaría trabajarlo en function, para poder iterar entre diferentes variables, por ejemplo condicion_aplicacion y así obtener con el agregado de una fecha de corte las frecuencias acumuladas de inmunizacion por niveles de dosis para cada grupo en diferentes momentos y crear un grafico interactivo sobre ello.
+#Solo preservaria el nivel alcanzado y frecuencia acumulada para aquellso que tienen varias agrupaciones.
 
-## Grafico dosis x mes del año 2022, fill = día
-aplicaciones_diarias %>%
-  filter(anio == 2022) %>% 
-  group_by(mes, dia) %>% 
-  summarise(suma_dosis = sum(dosis)) %>% 
-  mutate(participacion = suma_dosis / sum(suma_dosis) * 100) %>% 
-  ggplot(aes(x = mes, y = suma_dosis, fill = dia)) +
-  geom_col() +
-  scale_x_continuous(breaks = x_range_mes, 
-                     labels = x_range_mes_lab) +
-  labs(title = "Dosis aplicadas para cada mes del 2022") +
-  xlab(label = "Mes") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") +
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","meses_2022", ".png"))
+#De la tabla, dificil de inteligir, se extrae qué porcentaje de cada grupo se encuentra mas inmunizado para cada nivel de inmunización. 
 
-# Se vuelve a observar que los dias de semana son los mas registrados para aplicacion de nuevas dosis. Esta observación ya estaba presente en el gráfico anterior en que se presentaban las dosis entregadas cada día de la semana para todo el período registrado.
-```
+#Cuanto más alto el nivel de `Freq_rel_acum_sexo` vs el `otro`, el mas alto tiene mayor proporción del grupo_sexo inmunizado a un menor nivel de cobertura.
 
-## Dosis x cada año_mes
-```{r gh_ls_timvar_anio_mes, message=FALSE, fig.show='hold', out.width = "50%"}
-
-## Para observar con mayor precision descompongo el grafico anterior en meses de todo el periodo, de esta forma obtengo una mayor granulometria que permite ver comportamiento intermensual.
-# Grafico dosis x anio_mes
-ls_timvar_sumdosis[["anio_mes"]] %>% 
-  ggplot(aes(x = anio_mes, y = suma_dosis)) +
-  geom_col() +
-  labs(title = "Dosis aplicadas para cada mes") +
-  xlab(label = "Mes") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","anio_mes", ".png"))
-
-## Aun con mas granulometria, para observar comportamiento intersemanal. 
-# Grafico dosis x anio_semana
-ls_timvar_sumdosis[["anio_semana"]] %>% 
-  ggplot(aes(x = anio_semana, y = suma_dosis)) +
-  geom_col() +
-  labs(title = "Dosis aplicadas para cada semana") +
-  xlab(label = "Mes") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
-  theme_classic() ## 
-ggsave(paste0("png/ls_timvar_","anio_semana", ".png"))
-```
-Con cada nueva partición de la unidad temporal se puede apreciar con mayor detalle la volatilidad intersemanal, mensual y anual.
-
-
-```{r hp_1_aplic_prioriza, fig.show='hold', message=FALSE, out.width = "30%"}
-
-LUEGO DE AGRUPAR CONDICIONES DE SALUD HABRIA QUE REALIZAR EL 100% de barras apiladas y comparar entre estos periodos.
-
-# 2021
-data_reg %>% 
-  filter(anio==2021) %>% 
-  group_by(mes, condicion_aplicacion) %>% 
-  summarise(dosis = n()) %>%
-  ggplot(aes( x = mes, y = dosis, fill = condicion_aplicacion)) +
-  geom_col() +
-  theme_classic() +
-  scale_x_continuous(breaks = x_range_mes,
-                     labels = x_range_mes_lab)
-
-# 2022
-data_reg %>% 
-  filter(anio == 2022) %>% 
-  group_by(mes, condicion_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
-  geom_col() +
-  theme_classic() +
-  scale_x_continuous(breaks = x_range_mes,
-                     labels = x_range_mes_lab)
-
-# 2023
-data_reg %>% 
-  filter(anio == 2023) %>% 
-  group_by(mes, condicion_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(mes, n, fill = condicion_aplicacion)) + 
-  geom_col() +
-  theme_classic() +
-  scale_x_continuous(breaks = x_range_mes,
-                     labels = x_range_mes_lab)
-
+ls_prop_sexo_dosis[["sexos_dosis"]] %>% 
+  knitr::kable(caption = "Nivel de inmunizacion por sexo", col.names = c("Nivel", "Masculinos", "Participacion masculinos", "Frecuencia acum. masc.", "Femeninos", "Participacion femeninos", "Frecuencia acum. feme."))
 
 ```
+La yapita: El sexo que mas inmunizado se encuentra.
+  
+## X. Hipótesis. Plataforma y vacunas
+Cambios de plataforma
+* Por persona: que vacunas recibió.
 
-```{r lista_suma_dosis_tiempo}
-# Gráficos por cantidad de dosis aplicacion_diaria.
+Plataforma finalizada
+* Por persona: plataforma terminada y/o + refuerzo. (quienes abandonan plat.?)
+* Niveles de inmunización alcanzados. foto
+* Los jovenes y la adherencia de los esquemas. foto.
+
+## X. H. Direccionamiento por densidad demografica. 
+
+Las condiciones de vida en las grandes ciudad impide mantenerse aislado (transporte, abastecimiento, servicios) y aumenta la probabilidad de transmisión de virus. Los habitantes viven en condiciones de hacinamiento, inevitablemente poca distancia social, habitats sobrepoblados, transportes congestionados.
+
+Priorizar habitantes de grandes ciudades por dificultad de mantener la distancia social debido a la restricción espacial y densidad demográfica puede ser medida adecuada y lógica de mitigar y desacelerar la transmisión de virus.
+
+Se puede analizar por departamentos provinciales, en donde `depto_residencia` sean mas numerosos agrupados contra los menos numerosos.
+Ver porcentajes de vacunacion de deptos respecto a su poblacion de referencia.
+
+## X. H. Días de descanso entre dosis.
+Calcular para cada sujeto los dias de descanso transcurridos entre una dosis y la siguiente. Mediante la fecha de aplicacion de cada registro para cada persona. Se calculará la cantidad de dias que pasan entre una dosis y otra: dias_prom_vac1_vac2, dias_prom_vac2_vac3... y un total para dias_prom_vac1_vac10 promedio para cada grupo.
+
+
+## Variables estáticas (última actualización de la cohorte)
+### Variable `grupo_etario`
+```{r condicion_aplicacion_general, include=TRUE}
+tabla_general(ls_ed_df, "grupo_etario")
+grafico_estandar(ls_ed_df, "grupo_etario", "total_dosis")
+grafico_estandar(ls_ed_df, "grupo_etario", "mean_dosis")
+grafico_estandar(ls_ed_df, "grupo_etario", "max_dosis")
+grafico_estandar(ls_ed_df, "grupo_etario", "min_dosis")
+ls_ed_df$grupo_etario
 ```
 
-Conclusiones:
+## Variables dinámicas (todo el registro de la cohorte)
+
+
+
+
+
+# Conclusiones:
 
 El gráfico permite rápidamente visualizar los períodos de mas alta vacunación. La misma es multicausal, entre las principales explicaciones son la disponibilidad de vacunas y ejecución del plan de inmunizaciones, la confianza de la población, la subida de los casos y colapso del sistema hospitalario.
 
@@ -300,169 +389,51 @@ Se puede observar una extraña tendencia en la que durante el 2021 las aplicacio
 
 Luego en 2022 con gran disponibilidad de dosis se aplica en los primeros meses con prioridad a estos mismos grupos. 
 
-A mediados de 2022 los grupos priorizados empiezan a abandonar la aplicación de nuevas dosis y para 2023 ya no hay adultos mayores que se apliquen nuevas dosis. *al menos con este muestreo aleatorio, que bueno... es bastante reducido*
-
-# Variables cruzadas
-
-:::{.alert .alert.info}
-
-En esta sección se presentan análisis cruzados entre variables no comprendidos en las anteriores secciones.
-
-* Por jurisdicción: cuantas personas de residencia_i registran aplicaciones_i.
-* Por persona: que vacunas recibió.
-* Por persona: plataforma terminada y/o + refuerzo. *pendiente*
-
-:::
-
-## Variables Espaciales
-```{r df_datos_espaciales}
-source("scripts/df_datos_espaciales.R")
-col_order
-jurisdicciones_poblacion
-k_jurisdicciones_poblacion
-rm(col_order)
-```
-
-```{r grafico_jurisdicciones_vacunacion}
-# aplicaciones segun residencia de cada jurisdiccion.
-#ggplot(jurisdicciones_poblacion, aes(n_aplicacion, jurisdiccion)) + 
-#  geom_col(aes(res_fix, jurisdiccion, color = "blue")) + 
-#  geom_col(aes(nores_fix, jurisdiccion, color = "green"))
-
-# me gustaria hacer un grafico de barras que comparen un jurisdiccion a la vez:
-## barra residentes | barra aplicados. 
-
-data_reg %>% 
-  group_by(jurisdiccion_aplicacion, jurisdiccion_residencia) %>% 
-  summarise(n = n()) %>% 
-  arrange(desc(n)) %>% 
-  ggplot(aes(n, jurisdiccion_aplicacion, fill = jurisdiccion_residencia)) + 
-  geom_col() +
-  guides(fill = "none") +
-  labs(title = "Jurisdiccion de residencia y de aplicacion, barras de colores")
-
-ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion1" ,".png"))
-```
-Siguiendo con el consejo de Elio, las barras apiladas no son muy comprensibles, se pueden comparar entre una y otra, pero pocas, en presencia de muchas resulta difícil extraer patrones inteligibles. La siguiente propuesta es no mostrar por jurisdicción en un cruce contra todas las otras, mas sí presentar:
-
-1. los residentes de una jurisdicción en dónde se aplicaron y 
-1. los aplicados dentro una jurisdicción de qué origen son.
-
-```{r jur_aplic_resid_porc, fig.show='hold', out.width="50%" }
-
-# 1. los residentes de una jurisdicción en dónde se aplicaron
-jurisdicciones_poblacion %>% 
-  select(jurisdiccion, res_fix, res_nofix, n_residencia) %>% 
-  mutate(porc_fix = res_fix / n_residencia, 
-         porc_nofix = res_nofix / n_residencia) %>%
-  select(jurisdiccion, porc_fix, porc_nofix) %>% 
-  pivot_longer(cols = c(porc_fix, porc_nofix), 
-               names_to = "aplicado_destino",
-               values_to = "prop_fix") %>% 
-  ggplot(aes(prop_fix, jurisdiccion, fill = aplicado_destino)) +
-  geom_col() +
-  labs(title = "Residentes según jurisdicción de aplicación (%)")+
-  xlab("proporción aplicación") +
-  theme_classic()
-
-# 2. los aplicados dentro una jurisdicción de qué origen son.
-jurisdicciones_poblacion %>% 
-  select(jurisdiccion, res_fix, nores_fix, n_aplicacion) %>% 
-  mutate(porc_res = res_fix / n_aplicacion, 
-         porc_nores = nores_fix / n_aplicacion) %>%
-  select(jurisdiccion, porc_res, porc_nores) %>% 
-  pivot_longer(cols = c(porc_res, porc_nores), 
-               names_to = "origen_aplicado",
-               values_to = "prop_resid") %>% 
-  ggplot(aes(prop_resid, jurisdiccion, fill = origen_aplicado)) +
-  geom_col() +
-  labs(title = "Aplicados según jurisdicción de residencia (%)")+
-  xlab("proporción residencia") +
-  theme_classic()
-
-```
-se puede observar que residentes de la provincia de Buenos Aires se aplicaron en otras jurisdcciones mas que otros ciudadanos.
-
-Parece interesante, contrastar esta fuga de bonaerenses contra, cuantas otras personas se fugan de su jurisdiccion y donde tuvieron acogida.
-```{r jurisdiccion_distribucion_residentes, message=FALSE}
-data_reg %>% 
-  group_by(jurisdiccion_residencia, jurisdiccion_aplicacion) %>% 
-  summarise(n = n()) %>% 
-  mutate(prop = n/sum(n) * 100) %>% 
-  arrange(jurisdiccion_residencia) %>% 
-  ggplot(aes(jurisdiccion_residencia, jurisdiccion_aplicacion, size = n)) + 
-  geom_point(aes(color = jurisdiccion_residencia))
-# Guardo
-ggsave(paste0("png/jurisdicciones_","residencia_v_aplicacion2" ,".png"))
-```
-
-
-```{r grupo_etario_jovenes}
-jovenes <- data_reg %>%
-  mutate(grupo_etario_proxy = as.numeric(substr(grupo_etario, nchar(grupo_etario) - 2, nchar(grupo_etario))), 
-         jovenes = ifelse(grupo_etario_proxy < 30, "joven", "adulto")) %>% 
-  select(grupo_etario, grupo_etario_proxy, jovenes)
-
-#table(data$sexo, data$grupo_etario)
-
-#condicion_sexo <- table(data$condicion_aplicacion, data$grupo_etario)
-#condicion_sexo <- round(prop.table(condicion_sexo) * 100, 2)
-
-```
-
-## Análisis hipotéticos 
-
-:::{.alert .alert.info}
-En esta sección se presentan relaciones entre variables con el fin de explorar entre los resultados anteriores cuales se corresponden con algun tipo de explicacion proveniente de fenomenos culturales y sociales.
-
-* Niveles de inmunización alcanzados por cada grupo de variables de interes.
-* Jovenes y la adherencia de los esquemas (estatico).
-
-:::
-
-### Niveles de inmunizacion por sexo
-```{r ls_prop_sexo_dosis, message=FALSE}
-
-source("scripts/ls_prop_sexo_dosis.R")
-
-#este R me gustaría trabajarlo en function, para poder iterar entre diferentes variables, por ejemplo condicion_aplicacion y así obtener con el agregado de una fecha de corte las frecuencias acumuladas de inmunizacion por niveles de dosis para cada grupo en diferentes momentos y crear un grafico interactivo sobre ello.
-
-ls_prop_sexo_dosis[["sexos_dosis"]] %>% 
-  knitr::kable(caption = "Nivel de inmunizacion por sexo", col.names = c("Nivel", "Masculinos", "Participacion masculinos", "Frecuencia acum. masc.", "Femeninos", "Participacion femeninos", "Frecuencia acum. feme."))
-
-```
-De la tabla, dificil de inteligir, se extrae qué porcentaje de cada grupo se encuentra mas inmunizado para cada nivel de inmunización. 
-
-Cuanto más alto el nivel de `Freq_rel_acum_sexo` vs el `otro`, el mas alto tiene mayor proporción del grupo_sexo inmunizado a un menor nivel de cobertura.
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 # Mejoras posibles
 
-## Childs
-CHILD SUPPORT PLEASE
-https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html
-```{r hijitus, eval=FALSE, include=FALSE, results='asis'}
-cat("knitr--knit_child()...scripts/variable_resume_estdesc_texto_graph.Rmd, quiet = TRUE")
-print("mi informe consta de varios pasos que si se me permite me gustaria dejar todo metido en un script, o tambien dejarlos en rmd y llamarlos mediante child. Algo lei en bookdown pero no llegue a tener exito con la prueba.")
-```
-
-## Poner etiquetas de datos a los graficos
-```{r}
-# ?text ## para agregar valores, no me funciono.
-```
-
 ## Colores
 Mas colores: http://sape.inf.usi.ch/quick-reference/ggplot2/colour
+
+```{r ggplot_piechart, eval=FALSE, include=FALSE}
+pie <- data_reg %>%
+  group_by(id_persona) %>% 
+  filter(fecha_aplicacion == max(fecha_aplicacion)) %>% 
+  filter(cond_grupo != "Estratégico") %>% 
+  group_by(periodo, cond_grupo) %>% 
+  summarise(n = n()) %>% 
+  mutate(prop = n / sum(n) * 100) %>% 
+  arrange(cond_grupo, periodo) %>% 
+  ggplot(aes(x = "" , y = prop, fill = cond_grupo)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0)
+pie
+```
+
+```{r eval=FALSE, include=FALSE}
+# pivot - muestra composicion de la poblacion y distribucion de vacunas en ella. 
+temp_pivot <- ls_k[["df_hip1_reg_per"]] %>% 
+  pivot_longer(cols = c("prop_reg", "prop_per"), names_to = "fuente", values_to = "prop") 
+
+temp_pivot %>% 
+  ggplot(aes(cond_grupo, prop, fill = fuente)) +
+  geom_col(position = position_dodge(width = 0.95)) +
+  geom_text(aes(label = round(prop, 1)), vjust = -0.3, position = position_dodge(width = 0.9)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5), legend.position = "right") +
+  labs(title = "Participación de la población vacunada en cada período",
+       subtitle = "Grupo según condición de vulnerabilidad",
+       x = "Período",
+       y = "Proporción",
+       fill = "Condición")
+
+#En un geom_point puedo meter una regresion + geom_smooth(method = "lm") +
+#El argumento hjust = 0 ajusta la posición horizontal de las etiquetas para que aparezcan justo encima de las columnas.  
+#El argumento vjust = -0.5 ajusta la posición vertical de las etiquetas para que aparezcan justo encima de las columnas.
+#El valor position = position_dodge(width = 0.9) ajusta la separación horizontal de las etiquetas.
+
+```
 
