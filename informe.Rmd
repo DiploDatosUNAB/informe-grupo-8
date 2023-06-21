@@ -415,6 +415,24 @@ En los días
 `r sum(otra_tabla[3])`% de las dosis con un promedio de 
 `r sum(otra_tabla[3])/nrow(otra_tabla)`% cada día.
 
+### Aplicaciones por fecha
+A modo de yapita se presenta un gráfico con la cantidad de dosis aplicadas cada día desde el comienzo hasta el final de registros y para hacerla mas colorida se incluye el nombre de la vacuna como factor.
+
+```{r aplicacion_diaria_vacuna, message=FALSE}
+data_reg %>% 
+  group_by(fecha_aplicacion, vacuna) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(fecha_aplicacion, n, fill = vacuna)) +
+  geom_col() +
+  labs(title = "Aplicaciones por fecha",
+       subtitle = "Segun nombre de vacuna",
+       x = "Fecha de aplicacion",
+       y = "Cantidad aplicada",
+       fill = "Nombre de vacuna")
+
+```
+
+
 ## Caracterizar población, adherencia y nivel de inmunización. 
 Los mas jóvenes y la adherencia: sea por el motivo que fuere los jóvenes son menos adherentes a los mandatos y perciben de manera parcial los riesgos. Esa conducta y pensamiento puede llevarlos a no aceptar la aplicación de vacunas, desconfiar de ellas y saltarse los esquemas o plataformas iniciados, reduciendo la tasa de inmunización global de la población. Para cada grupo etario se obtendrá un porcentaje de personas cubiertas por una, dos, ... más vacunas. Se considera a tales efectos el seguimiento de los jóvenes digamos con años entre 18 y 29 años.
 
