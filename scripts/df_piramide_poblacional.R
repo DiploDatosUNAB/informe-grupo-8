@@ -5,6 +5,8 @@ df_piramide_poblacional <- data_per %>%
   summarise(n = n()) %>% 
   subset(sexo != "S.I.") # quito uno de los valores de sexo.
 
+ls_k[["df_pira_pobla"]] <- df_piramide_poblacional
+
 # invierto el signo de poblacion para los masculinos // funcion ifelse es igual a si() en excel.
 df_piramide_poblacional$n <- ifelse(df_piramide_poblacional$sexo == "M", 
                                     -df_piramide_poblacional$n, 
@@ -33,16 +35,20 @@ pop_range_breaks <- pretty(seq(-max(pop_range_breaks),
                            n = 7)
 
 # Gran grafico piramide poblacional de Gizha.
-gh_pira_pobla <- df_piramide_poblacional %>% 
+ls_k[["gh_pira_pobla"]] <- df_piramide_poblacional %>% 
   ggplot(aes(x = n, y = grupo_etario, fill = sexo)) +
   geom_col() +
   scale_x_continuous(breaks = pop_range_breaks,
                      labels = scales::comma(abs(pop_range_breaks))) +
   labs(title = "Piramide poblacional por <<sexo>> y <<grupo_etario>>") +
-  xlab(label = "Poblacion") +
+  xlab(label = "Poblacion - Sexo") +
   ylab(label = "Grupo etario") +
+  geom_text(aes(label = abs(n)), vjust = 1, hjust = 0.5) +
   theme(legend.position = "right") + ## ubicar la leyenda
   theme_classic() ## 
 #ggsave(paste0("png/piramide_poblacional_","sexo_grupo_etario", ".png"))
 
+
 rm(intervalo, n_range, n_range_seq, pop_range_breaks, df_piramide_poblacional)
+ 
+print("Producto de df_piramide_poblacional: ls_k[[df_pira_pobla]] y ls_k[[gh_pira_pobla]]")

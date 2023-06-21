@@ -91,12 +91,14 @@ jurisdicciones_poblacion <- jurisdicciones_poblacion %>%
 
 # reordeno, mejor lectura
 col_order <- c("jurisdiccion", "n_residencia", "res_fix", "res_nofix", "n_aplicacion", "nores_fix", "vac_extra") 
-k_jurisdicciones_poblacion <- jurisdicciones_poblacion %>% 
+ls_k[["df_jur_pobla"]] <- jurisdicciones_poblacion
+ls_k[["dfk_jur_pobla"]] <- jurisdicciones_poblacion %>% 
   select(all_of(col_order)) %>% 
   knitr::kable(col.names = c("Jurisdiccion", "Residentes", "Residentes vacunados in situ", "Residentes vacunados out situ", "Poblacion vacunada in situ", "No residentes vacunados in situ", "Saldo de vacunados neto"))
-# alternativa de reorden
-#jurisdicciones_poblacion <- jurisdicciones_poblacion[, col_order]
 
-print(paste("Producto de df_jurisdicciones_poblacion: k_jurisdicciones_poblacion"))
+# alternativa de reorden
+# jurisdicciones_poblacion <- jurisdicciones_poblacion[, col_order]
+
+print(paste0("Producto de df_jurisdicciones_poblacion: ls_k[[df_jur_pobla]] y ls_k[[dfk_jur_pobla]]"))
 
 rm(col_order, jurisdicciones_poblacion)

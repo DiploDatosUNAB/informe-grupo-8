@@ -16,8 +16,6 @@ tabla_general <- function(lista, elemento, variable) {
   return(k_esta_tabla)
 }
 
-print("")
-
 #esta_variable <- "condicion_aplicacion"
 #total_dosis <- "total_dosis"
 #mas_abs <- paste0(esta_variable,".1") o "mas_abs"

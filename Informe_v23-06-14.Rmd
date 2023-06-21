@@ -469,14 +469,6 @@ x_range_mes_lab <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "se
 ## Dosis x día de la semana
 ```{r gh_ls_timvar_dia, message=FALSE}
 ## Grafico dosis x dia
-ls_timvar_sumdosis[["dia"]] %>% 
-  ggplot(aes(x = dia, y = suma_dosis)) +
-  geom_col(fill = "lightcoral") +
-  labs(title = "Dosis aplicadas para cada día") +
-  xlab(label = "Días") +
-  ylab(label = "Dosis") +
-  theme(legend.position = "right") + ## ubicar la leyenda
-  theme_classic() ## 
 ggsave(paste0("png/ls_timvar_","dia", ".png"))
 ```
 
