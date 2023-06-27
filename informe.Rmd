@@ -675,9 +675,20 @@ df_descanso_wide
 ```
 
 
-# Funciones de caracterizacion de las agrupaciones de variable.
+# Visualizaciones basicas
 
-Variables estáticas (última actualización de la cohorte)
+## Nube de palabras
+```{r}
+vacunas <- data_reg %>% 
+  select(vacuna) %>% 
+  count(vacuna, sort = TRUE) %>% 
+  as.data.frame()
+
+wordcloud2::wordcloud2(vacunas, size = 1, minRotation = -pi/6, maxRotation = -pi/6,
+                  color = "skyblue", backgroundColor = "white")
+```
+
+## Variables estáticas (última actualización de la cohorte)
 
 ```{r condicion_aplicacion_general, include=TRUE}
 tabla_general(ls_ed_df, "grupo_etario")
